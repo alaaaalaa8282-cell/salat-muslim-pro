@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_dark">#0A1628</color>
     <color name="gold">#C9A84C</color>
-    <color name="green_islamic">#00695C</color>
+    <color name="green_dark">#064E3B</color>
+    <color name="green_light">#10B981</color>
+    <color name="background_dark">#010F0A</color>
+    <color name="surface_dark">#022C22</color>
+    <color name="ic_launcher_background">#022C22</color>
 </resources>
