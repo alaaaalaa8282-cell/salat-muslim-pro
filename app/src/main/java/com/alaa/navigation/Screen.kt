@@ -1,0 +1,10 @@
+package com.alaa.navigation
+
+sealed class Screen(val route: String) {
+    data object Home        : Screen("home")
+    data object PrayerTimes : Screen("prayer_times")
+    data object Dhikr       : Screen("dhikr")
+    data object Mesbaha     : Screen("mesbaha")
+    data object Challenges  : Screen("challenges")
+    data object Quran       : Screen("quran")
+}
