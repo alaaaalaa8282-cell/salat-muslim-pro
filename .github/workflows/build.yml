@@ -1,0 +1,111 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:     [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Signed APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      # ─── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ─── 2. Java 17 ───────────────────────────────────────────────────────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # ─── 3. Gradle wrapper jar (regenerate if missing/corrupt) ────────────
+      - name: Validate / regenerate gradle-wrapper.jar
+        run: |
+          JAR="gradle/wrapper/gradle-wrapper.jar"
+          MIN_SIZE=50000
+          if [ ! -f "$JAR" ] || [ "$(stat -c%s "$JAR" 2>/dev/null || stat -f%z "$JAR")" -lt "$MIN_SIZE" ]; then
+            echo "::warning::gradle-wrapper.jar missing or corrupt — regenerating via SDKMAN"
+            curl -s "https://get.sdkman.io" | bash
+            source "$HOME/.sdkman/bin/sdkman-init.sh"
+            sdk install gradle 8.7
+            sdk use gradle 8.7
+            gradle wrapper --gradle-version 8.7 --distribution-type bin
+          fi
+          echo "gradle-wrapper.jar size: $(stat -c%s "$JAR" 2>/dev/null || stat -f%z "$JAR") bytes"
+
+      # ─── 4. Grant execute permission ──────────────────────────────────────
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # ─── 5. Decode keystore ───────────────────────────────────────────────
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > alaa_release.jks
+            echo "KEYSTORE_PATH=alaa_release.jks" >> $GITHUB_ENV
+          else
+            echo "::warning::KEYSTORE_BASE64 secret not set — building unsigned"
+          fi
+
+      # ─── 6. Build ─────────────────────────────────────────────────────────
+      - name: Build Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS:      ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:   ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=512m"
+
+      # ─── 7. Locate APK ────────────────────────────────────────────────────
+      - name: Locate APK
+        id: apk
+        run: |
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          echo "path=$APK" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK"
+
+      # ─── 8. Upload artifact (always) ──────────────────────────────────────
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alaa-release-apk
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      # ─── 9. GitHub Release (only on version tags v*) ─────────────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.path }}
+          name: "Release ${{ github.ref_name }}"
+          body: |
+            ## Mohamed Abdelazim – Azan App ${{ github.ref_name }}
+            
+            ### الميزات:
+            - 🕌 **الأذان** – تنبيه بوقت الصلاة مع شاشة كاملة وأذان صوتي
+            - 📿 **الأذكار الصوتية** – تشغيل تلقائي بالتسلسل مع إيقاف أثناء المكالمات
+            - 📿 **السبحة الإلكترونية** – عداد تسبيح تفاعلي
+            - 🏆 **تحديات 30 يوم** – فجر وصدقة وحفظ سورة الملك
+            - 📖 **القرآن الكريم** – قراءة واستماع عبر qari.app
+            - 🌦️ **الطقس** – درجة الحرارة والوصف من Open-Meteo
+            - 📅 **التاريخ الهجري** – تلقائياً
+            - 🤲 **إهداء** – إلى الوالد الكريم محمد عبد العظيم الطويل رحمه الله
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
