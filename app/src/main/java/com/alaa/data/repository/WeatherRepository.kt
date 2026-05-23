@@ -1,38 +1,36 @@
 package com.alaa.data.repository
 
-import com.alaa.data.model.OpenMeteoResponse
 import com.alaa.data.model.WeatherData
-import retrofit2.Retrofit
-import retrofit2.http.GET
-import retrofit2.http.Query
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.URL
 
-interface WeatherApi {
-    @GET("v1/forecast")
-    suspend fun getWeather(
-        @Query("latitude")             lat: Double,
-        @Query("longitude")            lon: Double,
-        @Query("current")              current: String = "temperature_2m,weathercode,windspeed_10m",
-        @Query("wind_speed_unit")      windUnit: String = "kmh",
-        @Query("timezone")             tz: String = "auto"
-    ): OpenMeteoResponse
-}
-
-class WeatherRepository(retrofit: Retrofit) {
-    private val api = retrofit.create(WeatherApi::class.java)
+class WeatherRepository {
 
     suspend fun getWeather(lat: Double, lon: Double): WeatherData {
-        return try {
-            val response = api.getWeather(lat, lon)
-            val current  = response.current ?: return WeatherData()
-            WeatherData(
-                temperature = current.temperature_2m,
-                weatherCode = current.weathercode,
-                windspeed   = current.windspeed_10m,
-                description = weatherDescription(current.weathercode),
-                icon        = weatherIcon(current.weathercode)
-            )
-        } catch (e: Exception) {
-            WeatherData()
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = "https://api.open-meteo.com/v1/forecast" +
+                    "?latitude=$lat&longitude=$lon" +
+                    "&current=temperature_2m,weathercode,windspeed_10m" +
+                    "&timezone=auto"
+
+                val json = JSONObject(URL(url).readText())
+                val current = json.optJSONObject("current")
+                    ?: return@withContext WeatherData()
+
+                val code = current.optInt("weathercode", 0)
+                WeatherData(
+                    temperature = current.optDouble("temperature_2m", 0.0),
+                    weatherCode = code,
+                    windspeed   = current.optDouble("windspeed_10m", 0.0),
+                    description = weatherDescription(code),
+                    icon        = weatherIcon(code)
+                )
+            } catch (e: Exception) {
+                WeatherData()
+            }
         }
     }
 
