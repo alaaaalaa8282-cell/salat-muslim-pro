@@ -12,8 +12,6 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 import org.koin.dsl.module
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 class App : Application() {
     override fun onCreate() {
@@ -24,17 +22,8 @@ class App : Application() {
             modules(
                 module {
                     single { PrefsManager(androidContext()) }
-
-                    single {
-                        Retrofit.Builder()
-                            .baseUrl("https://api.open-meteo.com/")
-                            .addConverterFactory(GsonConverterFactory.create())
-                            .build()
-                    }
-
                     single { PrayerRepository(get()) }
-                    single { WeatherRepository(get()) }
-
+                    single { WeatherRepository() }
                     viewModel { HomeViewModel(get(), get(), get()) }
                     viewModel { DhikrViewModel(get()) }
                 }
