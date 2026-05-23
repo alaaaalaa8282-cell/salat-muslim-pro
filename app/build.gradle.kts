@@ -81,7 +81,6 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
 
     // Prayer times — الأذان
-    implementation("com.batoulapps.adhan:adhan:2.1.0")
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.3.0")
