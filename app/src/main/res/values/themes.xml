@@ -1,16 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- الثيم الرئيسي — pure Compose لا يحتاج Material3 XML -->
-    <style name="Theme.AlaApp" parent="android:Theme.Material.Light.NoTitleBar">
+    <style name="Theme.AlaApp" parent="android:Theme.Material.NoTitleBar">
         <item name="android:windowBackground">@color/bg_dark</item>
         <item name="android:statusBarColor">@color/bg_dark</item>
         <item name="android:navigationBarColor">@color/bg_dark</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
 
-    <!-- ثيم Splash Screen -->
     <style name="Theme.AlaApp.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/bg_dark</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
