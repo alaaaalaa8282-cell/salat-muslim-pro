@@ -19,6 +19,7 @@ gson               = "2.11.0"
 splashscreen       = "1.0.1"
 coil               = "2.7.0"
 workManager        = "2.9.1"
+material           = "1.12.0"
 
 [libraries]
 # AndroidX
@@ -30,6 +31,9 @@ androidx-splashscreen          = { group = "androidx.core",            name = "c
 androidx-work-runtime          = { group = "androidx.work",            name = "work-runtime-ktx",         version.ref = "workManager" }
 androidx-datastore             = { group = "androidx.datastore",       name = "datastore-preferences",    version.ref = "datastorePrefs" }
 
+# Material (مطلوبة للـ Theme في XML)
+material                       = { group = "com.google.android.material", name = "material",             version.ref = "material" }
+
 # Compose BOM
 compose-bom        = { group = "androidx.compose",    name = "compose-bom",           version.ref = "composeBom" }
 compose-ui         = { group = "androidx.compose.ui", name = "ui" }
@@ -39,7 +43,6 @@ compose-ui-tooling-debug = { group = "androidx.compose.ui", name = "ui-tooling" 
 compose-material3  = { group = "androidx.compose.material3", name = "material3" }
 compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
 compose-icons      = { group = "androidx.compose.material", name = "material-icons-extended" }
-compose-webview    = { group = "com.google.accompanist", name = "accompanist-webview",    version = "0.34.0" }
 navigation-compose = { group = "androidx.navigation",  name = "navigation-compose",    version.ref = "navigationCompose" }
 
 # Koin
