@@ -1,9 +1,9 @@
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application") version "8.5.2"
+    id("org.jetbrains.kotlin.android") version "2.0.21"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 val keystoreProps = Properties()
@@ -24,7 +24,8 @@ android {
 
     signingConfigs {
         create("release") {
-            val ksPath = System.getenv("KEYSTORE_PATH") ?: keystoreProps.getProperty("storeFile")
+            val ksPath = System.getenv("KEYSTORE_PATH")
+                ?: keystoreProps.getProperty("storeFile")
             if (ksPath != null) {
                 storeFile     = rootProject.file(ksPath)
                 storePassword = System.getenv("STORE_PASSWORD") ?: keystoreProps.getProperty("storePassword") ?: ""
@@ -38,7 +39,6 @@ android {
         release {
             isMinifyEnabled   = false
             isShrinkResources = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             val sc = signingConfigs.getByName("release")
             if (sc.storeFile?.exists() == true) signingConfig = sc
         }
@@ -49,7 +49,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-
     buildFeatures { compose = true }
 
     packaging {
@@ -58,16 +57,16 @@ android {
 }
 
 dependencies {
-    // AndroidX Core
+    // Core
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.6")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
-    // Compose BOM
-    implementation(platform("androidx.compose:compose-bom:2024.10.00"))
+    // Compose
+    val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
+    implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -81,12 +80,7 @@ dependencies {
     implementation("io.insert-koin:koin-android:3.5.6")
     implementation("io.insert-koin:koin-androidx-compose:3.5.6")
 
-    // Network
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("com.google.code.gson:gson:2.11.0")
-
-    // Prayer times
+    // Prayer times — الأذان
     implementation("com.batoulapps.adhan:adhan:2.1.0")
 
     // Location
