@@ -7,7 +7,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// ─── Signing Config ──────────────────────────────────────────────────────────
 val keystoreProps = Properties()
 val keystoreFile = rootProject.file("keystore.properties")
 if (keystoreFile.exists()) keystoreProps.load(keystoreFile.inputStream())
@@ -41,8 +40,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled   = true
-            isShrinkResources = true
+            isMinifyEnabled   = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             val sc = signingConfigs.getByName("release")
             if (sc.storeFile?.exists() == true) signingConfig = sc
@@ -55,7 +54,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions { jvmTarget = "17" }
 
@@ -73,8 +71,6 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.2")
-
     // AndroidX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.viewmodel)
@@ -84,6 +80,9 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.datastore)
 
+    // Material (للـ XML Theme)
+    implementation(libs.material)
+
     // Compose
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -92,7 +91,6 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
     implementation(libs.compose.icons)
-    implementation(libs.compose.webview)
     implementation(libs.navigation.compose)
     debugImplementation(libs.compose.ui.tooling.debug)
 
@@ -100,7 +98,7 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.compose)
 
-    // Network (weather)
+    // Network
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
