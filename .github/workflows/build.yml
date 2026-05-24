@@ -58,11 +58,29 @@ jobs:
         run: |
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           echo "path=$APK" >> $GITHUB_OUTPUT
-          echo "✅ APK: $APK"
 
-      - name: Upload APK
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: salat-muslim-pro
           path: ${{ steps.apk.outputs.path }}
           retention-days: 30
+
+      - name: Get version name
+        id: version
+        run: |
+          VERSION=$(grep versionName app/build.gradle.kts | grep -o '"[^"]*"' | tr -d '"')
+          echo "name=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.name }}-${{ github.run_number }}
+          name: "النسخة ${{ steps.version.outputs.name }} (#${{ github.run_number }})"
+          body: |
+            🕌 تطبيق صلات مسلم برو
+            🤲 إهداء إلى روح محمد عبد العظيم الطويل رحمه الله
+          files: ${{ steps.apk.outputs.path }}
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
