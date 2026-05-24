@@ -121,3 +121,18 @@ class PrayerAlarmService : Service() {
         @Volatile var isPlaying: Boolean = false
     }
 }
+
+
+// ─── Receiver ─────────────────────────────────────────────────────────────────
+class PrayerAlarmReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: android.content.Context, intent: android.content.Intent) {
+        val prayerName = intent.getStringExtra(com.alaa.utils.Constants.PRAYER_NAME_KEY) ?: "الصلاة"
+        val i = Intent(context, PrayerAlarmService::class.java).apply {
+            putExtra(com.alaa.utils.Constants.PRAYER_NAME_KEY, prayerName)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            context.startForegroundService(i)
+        else
+            context.startService(i)
+    }
+}
