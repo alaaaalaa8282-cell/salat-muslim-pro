@@ -1,6 +1,5 @@
 package com.alaa.presentation.home
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
 import androidx.lifecycle.ViewModel
@@ -11,8 +10,6 @@ import com.alaa.data.prefs.PrefsManager
 import com.alaa.data.repository.PrayerRepository
 import com.alaa.data.repository.WeatherRepository
 import com.alaa.utils.PrayerScheduler
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,28 +45,27 @@ class HomeViewModel(
         startCountdownTick()
     }
 
-    @SuppressLint("MissingPermission")
     fun fetchLocation(context: Context) {
         try {
-            val client = LocationServices.getFusedLocationProviderClient(context)
-            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                .addOnSuccessListener { loc ->
-                    loc ?: return@addOnSuccessListener
-                    prefs.latitude  = loc.latitude
-                    prefs.longitude = loc.longitude
-                    // Reverse geocode city name
-                    try {
-                        val geocoder = Geocoder(context, Locale("ar"))
-                        @Suppress("DEPRECATION")
-                        val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-                        val city = addresses?.firstOrNull()?.locality
-                            ?: addresses?.firstOrNull()?.adminArea
-                            ?: "موقعك"
-                        prefs.cityName = city
-                        _state.update { it.copy(cityName = city) }
-                    } catch (_: Exception) {}
-                    loadData(context, loc.latitude, loc.longitude)
-                }
+            val locationManager = context.getSystemService(Context.LOCATION_SERVICE)
+                    as android.location.LocationManager
+            val provider = android.location.LocationManager.NETWORK_PROVIDER
+            @Suppress("MissingPermission")
+            val loc = locationManager.getLastKnownLocation(provider)
+                ?: locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+            loc ?: return
+            prefs.latitude  = loc.latitude
+            prefs.longitude = loc.longitude
+            try {
+                @Suppress("DEPRECATION")
+                val addresses = Geocoder(context, Locale("ar"))
+                    .getFromLocation(loc.latitude, loc.longitude, 1)
+                val city = addresses?.firstOrNull()?.locality
+                    ?: addresses?.firstOrNull()?.adminArea ?: "موقعك"
+                prefs.cityName = city
+                _state.update { it.copy(cityName = city) }
+            } catch (_: Exception) {}
+            loadData(context, loc.latitude, loc.longitude)
         } catch (_: Exception) {}
     }
 
@@ -78,11 +74,13 @@ class HomeViewModel(
             _state.update { it.copy(isLoading = true) }
             val prayer  = prayerRepo.getPrayerTimes(lat, lon)
             val weather = try { weatherRepo.getWeather(lat, lon) } catch (_: Exception) { WeatherData() }
-            _state.update { it.copy(prayerData = prayer, weatherData = weather, isLoading = false, lat = lat, lon = lon) }
-
-            // Schedule alarms
-            val times = prayerRepo.getScheduledPrayerTimes(lat, lon)
-            PrayerScheduler.scheduleAllPrayers(context, times)
+            _state.update {
+                it.copy(prayerData = prayer, weatherData = weather, isLoading = false, lat = lat, lon = lon)
+            }
+            try {
+                val times = prayerRepo.getScheduledPrayerTimes(lat, lon)
+                PrayerScheduler.scheduleAllPrayers(context, times)
+            } catch (_: Exception) {}
         }
     }
 
@@ -90,9 +88,9 @@ class HomeViewModel(
         viewModelScope.launch {
             while (isActive) {
                 delay(1_000)
-                val lat = prefs.latitude
-                val lon = prefs.longitude
-                val prayer = prayerRepo.getPrayerTimes(lat, lon)
+                val prayer = try {
+                    prayerRepo.getPrayerTimes(prefs.latitude, prefs.longitude)
+                } catch (_: Exception) { continue }
                 _state.update { it.copy(prayerData = prayer) }
             }
         }
