@@ -39,7 +39,7 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.p12
           echo "✅ Keystore size: $(stat -c%s $GITHUB_WORKSPACE/keystore.p12) bytes"
 
       - name: Build Signed Release APK
