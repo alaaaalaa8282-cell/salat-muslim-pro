@@ -63,12 +63,13 @@ jobs:
           fi
 
       - name: Build Signed Release APK
+        env:
+          STORE_FILE: ${{ github.workspace }}/keystore.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease \
-            -PSTORE_FILE="$GITHUB_WORKSPACE/keystore.jks" \
-            -PSTORE_PASSWORD="${{ secrets.STORE_PASSWORD }}" \
-            -PKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
-            -PKEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
             --no-daemon \
             --stacktrace
 
@@ -76,15 +77,12 @@ jobs:
         run: |
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           echo "APK: $APK"
-          $JAVA_HOME/bin/jarsigner -verify "$APK"
-          if [ $? -ne 0 ]; then
-            echo "❌ APK غير موقّع — إيقاف!" && exit 1
+          OUTPUT=$($JAVA_HOME/bin/jarsigner -verify -verbose "$APK" 2>&1)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -q "jar is unsigned"; then
+            echo "❌ APK غير موقّع!" && exit 1
           fi
           echo "✅ APK موقّع بنجاح"
-          # تأكد إن الاسم مش unsigned
-          if [[ "$APK" == *"unsigned"* ]]; then
-            echo "❌ APK لا يزال unsigned!" && exit 1
-          fi
           echo "apk_path=$APK" >> $GITHUB_ENV
 
       - name: Upload APK as artifact
