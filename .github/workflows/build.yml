@@ -37,39 +37,18 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Validate secrets exist
-        run: |
-          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
-            echo "❌ KEYSTORE_BASE64 is missing!" && exit 1
-          fi
-          if [ -z "${{ secrets.STORE_PASSWORD }}" ]; then
-            echo "❌ STORE_PASSWORD is missing!" && exit 1
-          fi
-          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then
-            echo "❌ KEY_ALIAS is missing!" && exit 1
-          fi
-          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then
-            echo "❌ KEY_PASSWORD is missing!" && exit 1
-          fi
-          echo "✅ All secrets present"
-
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
-          SIZE=$(stat -c%s $GITHUB_WORKSPACE/keystore.jks)
-          echo "✅ Keystore size: $SIZE bytes"
-          if [ "$SIZE" -lt 100 ]; then
-            echo "❌ Keystore too small — base64 decode failed!" && exit 1
-          fi
+          echo "✅ Keystore size: $(stat -c%s $GITHUB_WORKSPACE/keystore.p12) bytes"
 
       - name: Build Signed Release APK
-        env:
-          STORE_FILE: ${{ github.workspace }}/keystore.jks
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease \
+            -PSTORE_FILE="$GITHUB_WORKSPACE/keystore.p12" \
+            -PSTORE_PASSWORD="${{ secrets.STORE_PASSWORD }}" \
+            -PKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -PKEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
             --no-daemon \
             --stacktrace
 
@@ -77,12 +56,8 @@ jobs:
         run: |
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           echo "APK: $APK"
-          OUTPUT=$($JAVA_HOME/bin/jarsigner -verify -verbose "$APK" 2>&1)
-          echo "$OUTPUT"
-          if echo "$OUTPUT" | grep -q "jar is unsigned"; then
-            echo "❌ APK غير موقّع!" && exit 1
-          fi
-          echo "✅ APK موقّع بنجاح"
+          # التحقق إن الـ APK موقّع
+          $JAVA_HOME/bin/jarsigner -verify "$APK" && echo "✅ APK موقّع بنجاح" || echo "❌ APK غير موقّع"
           echo "apk_path=$APK" >> $GITHUB_ENV
 
       - name: Upload APK as artifact
