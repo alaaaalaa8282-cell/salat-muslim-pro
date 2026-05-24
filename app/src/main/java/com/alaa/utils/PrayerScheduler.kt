@@ -1,55 +1,55 @@
-package com.alaa.utils
+package com.alaa.domain.usecase
 
-import android.annotation.SuppressLint
 import android.app.AlarmManager
+import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import com.alaa.service.PrayerAlarmReceiver
-import java.util.Date
+import android.location.Location
+import android.location.LocationManager
+import com.alaa.data.PrayerCalculator
+import com.alaa.presentation.base.Constants
+import com.alaa.presentation.service.PrayerAlarmService
+import java.util.Calendar
 
-object PrayerScheduler {
+class PrayerSchedulingUseCase(private val app: Application) {
 
-    @SuppressLint("ScheduleExactAlarm")
-    fun schedulePrayer(context: Context, prayerName: String, time: Date, requestCode: Int) {
-        if (time.before(Date())) return
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
-            putExtra(Constants.PRAYER_NAME_KEY, prayerName)
-        }
-        val pi = PendingIntent.getBroadcast(
-            context, requestCode, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time.time, pi)
-            else
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, time.time, pi)
-        } catch (e: SecurityException) {
-            alarmManager.set(AlarmManager.RTC_WAKEUP, time.time, pi)
-        }
-    }
+    fun rescheduleTodayPrayerAlarms() {
+        val prefs = app.getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
+        val lat = prefs.getFloat("lat", 30.0f).toDouble()
+        val lng = prefs.getFloat("lng", 31.0f).toDouble()
+        if (lat == 30.0 && lng == 31.0) return  // no saved location yet
 
-    fun scheduleAllPrayers(context: Context, prayerTimes: Map<String, Date>) {
-        val prayerList = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
-        prayerList.forEachIndexed { index, name ->
-            prayerTimes[name]?.let { time ->
-                schedulePrayer(context, name, time, Constants.PRAYER_REQUEST_CODE + index)
+        val times = PrayerCalculator.calculate(lat, lng)
+        val am = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val now = System.currentTimeMillis()
+
+        val salahKeys = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
+        var reqCode = 2000
+
+        times.filter { it.nameAr in salahKeys }.forEach { prayer ->
+            val parts = prayer.time.split(":")
+            if (parts.size < 2) return@forEach
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, parts[0].toIntOrNull() ?: return@forEach)
+                set(Calendar.MINUTE, parts[1].toIntOrNull() ?: return@forEach)
+                set(Calendar.SECOND, 0)
+                if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
             }
-        }
-    }
 
-    fun cancelAll(context: Context) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        for (i in 0..4) {
-            val pi = PendingIntent.getBroadcast(
-                context, Constants.PRAYER_REQUEST_CODE + i,
-                Intent(context, PrayerAlarmReceiver::class.java),
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            val intent = Intent(app, PrayerAlarmService::class.java).apply {
+                putExtra(Constants.PRAYER_NAME_KEY, prayer.nameAr)
+                putExtra("prayer_key", prayer.nameEn)  // Fajr, Dhuhr, Asr, Maghrib, Isha
+            }
+            val pi = PendingIntent.getForegroundService(
+                app, reqCode++, intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            pi?.let { alarmManager.cancel(it) }
+            try {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+            } catch (e: Exception) {
+                am.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+            }
         }
     }
 }
