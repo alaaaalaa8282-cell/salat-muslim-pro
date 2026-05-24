@@ -25,7 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
 import com.alaa.navigation.Screen
 import com.alaa.ui.theme.DarkBg
@@ -35,7 +35,7 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = koinViewModel()) {
-    val state   by viewModel.state.collectAsStateWithLifecycle()
+    val state = viewModel.state.collectAsState().value
     val context = LocalContext.current
 
     val locationLauncher = rememberLauncherForActivityResult(
