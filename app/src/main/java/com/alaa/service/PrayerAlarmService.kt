@@ -1,4 +1,4 @@
-package com.alaa.presentation.service
+package com.alaa.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -14,8 +14,7 @@ import android.os.Build
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.alaa.R
-import com.alaa.presentation.base.Constants
-import com.alaa.presentation.azan.AzanFullScreenActivity
+import com.alaa.utils.Constants
 
 class PrayerAlarmService : Service() {
 
@@ -33,10 +32,7 @@ class PrayerAlarmService : Service() {
         isPlaying = true
         acquireWakeLock()
         createChannel()
-        startForeground(Constants.NOTIF_AZAN_ID, buildNotification(prayerName))
-
-        val fullScreenIntent = AzanFullScreenActivity.newIntent(this, prayerName)
-        startActivity(fullScreenIntent)
+        startForeground(Constants.AZAN_NOTIF_ID, buildNotification(prayerName))
         playAzan()
         return START_NOT_STICKY
     }
@@ -44,16 +40,16 @@ class PrayerAlarmService : Service() {
     private fun getSelectedAzanRes(): Int {
         val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
         return when (prefs.getString("azan_qari", "makkah")) {
-            "abed_albaset"       -> R.raw.azan_abed_albaset
-            "al_hosary"          -> R.raw.azan_al_hosary
-            "al_nakshabandy"     -> R.raw.azan_al_nakshabandy
-            "mansoor_al_zahrani" -> R.raw.azan_mansoor_al_zahrani
-            "mishary_alafasi"    -> R.raw.azan_mishary_alafasi
-            "mohamed_refat"      -> R.raw.azan_mohamed_refat
-            "mohammed_almenshawy"-> R.raw.azan_mohammed_almenshawy
-            "nasser_alqatami"    -> R.raw.azan_nasser_alqatami
-            "suhaib_khatba"      -> R.raw.azan_suhaib_khatba
-            else                 -> R.raw.azan_makkah
+            "abed_albaset"        -> R.raw.azan_abed_albaset
+            "al_hosary"           -> R.raw.azan_al_hosary
+            "al_nakshabandy"      -> R.raw.azan_al_nakshabandy
+            "mansoor_al_zahrani"  -> R.raw.azan_mansoor_al_zahrani
+            "mishary_alafasi"     -> R.raw.azan_mishary_alafasi
+            "mohamed_refat"       -> R.raw.azan_mohamed_refat
+            "mohammed_almenshawy" -> R.raw.azan_mohammed_almenshawy
+            "nasser_alqatami"     -> R.raw.azan_nasser_alqatami
+            "suhaib_khatba"       -> R.raw.azan_suhaib_khatba
+            else                  -> R.raw.azan_makkah
         }
     }
 
@@ -84,11 +80,10 @@ class PrayerAlarmService : Service() {
         try { mediaPlayer?.stop(); mediaPlayer?.release() } catch (_: Exception) {}
         mediaPlayer = null
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 audioFocusRequest?.let {
                     (getSystemService(AUDIO_SERVICE) as AudioManager).abandonAudioFocusRequest(it)
                 }
-            }
         } catch (_: Exception) {}
         try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (_: Exception) {}
         sendBroadcast(Intent(Constants.ACTION_STOP_AZAN))
@@ -104,23 +99,21 @@ class PrayerAlarmService : Service() {
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = getSystemService(NotificationManager::class.java)
-            if (nm.getNotificationChannel(Constants.CHANNEL_AZAN_ID) == null) {
+            if (nm.getNotificationChannel(Constants.AZAN_CHANNEL_ID) == null)
                 nm.createNotificationChannel(
-                    NotificationChannel(Constants.CHANNEL_AZAN_ID, "الأذان", NotificationManager.IMPORTANCE_HIGH)
+                    NotificationChannel(Constants.AZAN_CHANNEL_ID, "الأذان", NotificationManager.IMPORTANCE_HIGH)
                         .apply { setSound(null, null) }
                 )
-            }
         }
     }
 
     private fun buildNotification(prayerName: String): Notification =
-        NotificationCompat.Builder(this, Constants.CHANNEL_AZAN_ID)
-            .setSmallIcon(R.drawable.ic_mosque)
+        NotificationCompat.Builder(this, Constants.AZAN_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .setContentTitle("وقت صلاة $prayerName")
             .setContentText("حي على الصلاة")
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
