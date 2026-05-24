@@ -3,7 +3,6 @@ name: Build & Release APK
 on:
   push:
     branches: [ main, master ]
-    tags:     [ 'v*' ]
   workflow_dispatch:
 
 jobs:
@@ -18,9 +17,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -29,17 +25,14 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Validate / regenerate gradle-wrapper.jar
+      - name: Validate gradle-wrapper.jar
         run: |
           JAR="gradle/wrapper/gradle-wrapper.jar"
-          MIN_SIZE=50000
           SIZE=$(stat -c%s "$JAR" 2>/dev/null || echo 0)
-          if [ ! -f "$JAR" ] || [ "$SIZE" -lt "$MIN_SIZE" ]; then
-            echo "::warning::gradle-wrapper.jar missing or corrupt — regenerating via SDKMAN"
+          if [ ! -f "$JAR" ] || [ "$SIZE" -lt 50000 ]; then
             curl -s "https://get.sdkman.io" | bash
             source "$HOME/.sdkman/bin/sdkman-init.sh"
             sdk install gradle 8.7
-            sdk use gradle 8.7
             gradle wrapper --gradle-version 8.7 --distribution-type bin
           fi
 
@@ -47,45 +40,29 @@ jobs:
         run: chmod +x gradlew
 
       - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > alaa_release.jks
-            echo "KEYSTORE_PATH=alaa_release.jks" >> $GITHUB_ENV
-          else
-            echo "::warning::KEYSTORE_BASE64 not set — building unsigned"
-          fi
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
 
       - name: Build Release APK
-        env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS:      ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD:   ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease \
+            -PSTORE_FILE=keystore.jks \
+            -PSTORE_PASSWORD="${{ secrets.STORE_PASSWORD }}" \
+            -PKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
+            -PKEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
             --no-daemon \
-            --stacktrace \
-            -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=512m"
+            --stacktrace
 
-      - name: Locate APK
+      - name: Get APK path
         id: apk
         run: |
           APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
           echo "path=$APK" >> $GITHUB_OUTPUT
+          echo "✅ APK: $APK"
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: alaa-release-apk
+          name: release-apk
           path: ${{ steps.apk.outputs.path }}
           retention-days: 30
-
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ steps.apk.outputs.path }}
-          name: "Release ${{ github.ref_name }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
