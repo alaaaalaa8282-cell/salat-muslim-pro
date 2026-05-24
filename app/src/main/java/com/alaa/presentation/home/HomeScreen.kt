@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,25 +31,19 @@ import com.alaa.navigation.Screen
 import com.alaa.ui.theme.DarkBg
 import com.alaa.ui.theme.DarkBg2
 import com.alaa.ui.theme.Gold
-import com.alaa.ui.theme.GoldLight
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun HomeScreen(
-    navController: NavController,
-    viewModel: HomeViewModel = koinViewModel()
-) {
+fun HomeScreen(navController: NavController, viewModel: HomeViewModel = koinViewModel()) {
     val state   by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // Location permission
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
         if (granted.values.any { it }) viewModel.fetchLocation(context)
     }
 
-    // Notification permission
     val notifLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {}
@@ -64,56 +59,30 @@ fun HomeScreen(
     }
 
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(DarkBg),
+        modifier = Modifier.fillMaxSize().background(DarkBg),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // ─── Header with Islamic logo ───────────────────────────────────
         item { HomeHeader(cityName = state.cityName, onRefresh = { viewModel.fetchLocation(context) }) }
-
-        // ─── Father memorial photo box ──────────────────────────────────
         item { FatherMemorialCard() }
-
-        // ─── Countdown to next prayer ───────────────────────────────────
         item { NextPrayerCard(state = state) }
-
-        // ─── Prayer times table ─────────────────────────────────────────
-        item {
-            PrayerTimesCard(
-                state = state,
-                onSeeAll = { navController.navigate(Screen.PrayerTimes.route) }
-            )
-        }
-
-        // ─── Weather widget ─────────────────────────────────────────────
+        item { PrayerTimesCard(state = state, onSeeAll = { navController.navigate(Screen.PrayerTimes.route) }) }
         item { WeatherCard(state = state) }
-
-        // ─── Hijri date ─────────────────────────────────────────────────
         item { HijriDateCard(state = state) }
     }
 }
 
-// ─── Header ──────────────────────────────────────────────────────────────────
 @Composable
 private fun HomeHeader(cityName: String, onRefresh: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
             .background(Brush.verticalGradient(listOf(DarkBg2, DarkBg)))
             .padding(16.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            // Mosque icon (use drawable or emoji fallback)
             Text("🕌", fontSize = 48.sp, textAlign = TextAlign.Center)
             Spacer(Modifier.height(4.dp))
-            Text(
-                "Mohamed Abdelazim",
-                color = Gold,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text("Azan App", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+            Text("Mohamed Abdelazim", color = Gold, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("Azan App", color = Color.White.copy(0.7f), fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, null, tint = Gold, modifier = Modifier.size(14.dp))
@@ -128,112 +97,62 @@ private fun HomeHeader(cityName: String, onRefresh: () -> Unit) {
     }
 }
 
-// ─── Father memorial ─────────────────────────────────────────────────────────
 @Composable
 private fun FatherMemorialCard() {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
         shape  = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFF1A1A2E), Color(0xFF16213E))
-                    )
-                )
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🤲", fontSize = 32.sp)
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "محمد عبد العظيم الطويل",
-                    color = Gold,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "رحمه الله ووسع له في قبره وأسكنه فسيح جناته",
-                    color = Color.White.copy(0.75f),
-                    fontSize = 13.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 20.sp
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "اللهم اغفر له وارحمه وعافه واعف عنه",
-                    color = Gold.copy(0.8f),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
+            Text("🤲", fontSize = 32.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("محمد عبد العظيم الطويل", color = Gold, fontSize = 18.sp,
+                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(4.dp))
+            Text("رحمه الله ووسع له في قبره وأسكنه فسيح جناته",
+                color = Color.White.copy(0.75f), fontSize = 13.sp,
+                textAlign = TextAlign.Center, lineHeight = 20.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("اللهم اغفر له وارحمه وعافه واعف عنه",
+                color = Gold.copy(0.8f), fontSize = 12.sp, textAlign = TextAlign.Center)
         }
     }
 }
 
-// ─── Next prayer countdown ────────────────────────────────────────────────────
 @Composable
 private fun NextPrayerCard(state: HomeState) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1F3A)),
         shape  = RoundedCornerShape(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("الصلاة القادمة", color = Gold.copy(0.8f), fontSize = 12.sp)
             Spacer(Modifier.height(4.dp))
-            Text(
-                state.prayerData.nextPrayerName,
-                color = Gold,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(state.prayerData.nextPrayerName, color = Gold, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text(
-                state.prayerData.nextPrayerTime,
-                color = Color.White,
-                fontSize = 18.sp
-            )
+            Text(state.prayerData.nextPrayerTime, color = Color.White, fontSize = 18.sp)
             Spacer(Modifier.height(8.dp))
-            // Countdown
             Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                modifier = Modifier.clip(RoundedCornerShape(12.dp))
                     .background(Gold.copy(0.15f))
                     .padding(horizontal = 24.dp, vertical = 8.dp)
             ) {
-                Text(
-                    state.prayerData.countdown,
-                    color = Gold,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                )
+                Text(state.prayerData.countdown, color = Gold, fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
             }
         }
     }
 }
 
-// ─── Prayer times table ───────────────────────────────────────────────────────
 @Composable
 private fun PrayerTimesCard(state: HomeState, onSeeAll: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1F3A)),
         shape  = RoundedCornerShape(16.dp)
     ) {
@@ -250,96 +169,71 @@ private fun PrayerTimesCard(state: HomeState, onSeeAll: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             val p = state.prayerData
-            PrayerRow("🌙 الفجر",   p.fajr,    p.nextPrayerName == "الفجر")
-            PrayerRow("☀️ الظهر",   p.dhuhr,   p.nextPrayerName == "الظهر")
-            PrayerRow("🌤️ العصر",   p.asr,     p.nextPrayerName == "العصر")
-            PrayerRow("🌅 المغرب",  p.maghrib,  p.nextPrayerName == "المغرب")
-            PrayerRow("🌃 العشاء",  p.isha,    p.nextPrayerName == "العشاء")
+            listOf(
+                Triple("🌙 الفجر",  p.fajr,    p.nextPrayerName == "الفجر"),
+                Triple("☀️ الظهر",  p.dhuhr,   p.nextPrayerName == "الظهر"),
+                Triple("🌤️ العصر",  p.asr,     p.nextPrayerName == "العصر"),
+                Triple("🌅 المغرب", p.maghrib,  p.nextPrayerName == "المغرب"),
+                Triple("🌃 العشاء", p.isha,    p.nextPrayerName == "العشاء"),
+            ).forEach { (name, time, isNext) ->
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isNext) Gold.copy(0.1f) else Color.Transparent)
+                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Text(name, color = if (isNext) Gold else Color.White.copy(0.8f),
+                        fontSize = 14.sp, fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal)
+                    if (isNext) Box(Modifier.size(8.dp).background(Color.Green, CircleShape))
+                    Text(time, color = if (isNext) Gold else Color.White,
+                        fontSize = 14.sp, fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal)
+                }
+                if (!isNext) HorizontalDivider(color = Color.White.copy(0.05f), thickness = 0.5.dp)
+            }
         }
     }
 }
 
-@Composable
-private fun PrayerRow(name: String, time: String, isNext: Boolean) {
-    val bg = if (isNext) Gold.copy(0.1f) else Color.Transparent
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically
-    ) {
-        Text(name, color = if (isNext) Gold else Color.White.copy(0.8f), fontSize = 14.sp,
-            fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal)
-        if (isNext) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(Color.Green, CircleShape)
-            )
-        }
-        Text(time, color = if (isNext) Gold else Color.White, fontSize = 14.sp,
-            fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal)
-    }
-    if (!isNext) Divider(color = Color.White.copy(0.05f), thickness = 0.5.dp)
-}
-
-// ─── Weather card ─────────────────────────────────────────────────────────────
 @Composable
 private fun WeatherCard(state: HomeState) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1F3A)),
         shape  = RoundedCornerShape(16.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(state.weatherData.icon, fontSize = 36.sp)
             Spacer(Modifier.width(16.dp))
             Column {
-                Text(
-                    "${state.weatherData.temperature.toInt()}°C",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("${state.weatherData.temperature.toInt()}°C", color = Color.White,
+                    fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Text(state.weatherData.description, color = Color.White.copy(0.7f), fontSize = 13.sp)
             }
             Spacer(Modifier.weight(1f))
-            Column(horizontalAlignment = Alignment.End) {
-                Text("💨 ${state.weatherData.windspeed.toInt()} km/h", color = Color.White.copy(0.6f), fontSize = 12.sp)
+            Text("💨 ${state.weatherData.windspeed.toInt()} km/h",
+                color = Color.White.copy(0.6f), fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun HijriDateCard(state: HomeState) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1F3A)),
+        shape  = RoundedCornerShape(16.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(state.prayerData.hijriDate, color = Gold, fontSize = 16.sp,
+                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            if (state.prayerData.gregorianDate.isNotEmpty()) {
+                Spacer(Modifier.height(4.dp))
+                Text(state.prayerData.gregorianDate, color = Color.White.copy(0.6f),
+                    fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
-// ─── Hijri date card ──────────────────────────────────────────────────────────
-@Composable
-private fun HijriDateCard(state: HomeState) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1F3A)),
-        shape  = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(state.prayerData.hijriDate, color = Gold, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center)
-            if (state.prayerData.gregorianDate.isNotEmpty()) {
-                Spacer(Modifier.height(4.dp))
-                Text(state.prayerData.gregorianDate, color = Color.White.copy(0.6f), fontSize = 12.sp,
-                    textAlign = TextAlign.Center)
-            }
-        }
-    }
-}
