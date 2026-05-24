@@ -14,7 +14,6 @@ object PrayerScheduler {
     @SuppressLint("ScheduleExactAlarm")
     fun schedulePrayer(context: Context, prayerName: String, time: Date, requestCode: Int) {
         if (time.before(Date())) return
-
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, PrayerAlarmReceiver::class.java).apply {
             putExtra(Constants.PRAYER_NAME_KEY, prayerName)
@@ -23,15 +22,12 @@ object PrayerScheduler {
             context, requestCode, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time.time, pi)
-            } else {
+            else
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, time.time, pi)
-            }
         } catch (e: SecurityException) {
-            // SCHEDULE_EXACT_ALARM not granted — fall back to inexact
             alarmManager.set(AlarmManager.RTC_WAKEUP, time.time, pi)
         }
     }
@@ -49,8 +45,7 @@ object PrayerScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         for (i in 0..4) {
             val pi = PendingIntent.getBroadcast(
-                context,
-                Constants.PRAYER_REQUEST_CODE + i,
+                context, Constants.PRAYER_REQUEST_CODE + i,
                 Intent(context, PrayerAlarmReceiver::class.java),
                 PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
             )
