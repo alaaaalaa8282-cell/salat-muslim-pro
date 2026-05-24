@@ -18,21 +18,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.alaa.presentation.theme.*
+import com.alaa.ui.theme.Gold
+
+// ─── Local theme colors ───────────────────────────────────────────────────────
+private val GoldLight    = Color(0xFFEDE0C4)
+private val GoldDim      = Color(0xFF8B6914).copy(alpha = 0.4f)
+private val TextPrimary  = Color(0xFFE8F4F0)
+private val TextSecondary = Color(0xFF9CA3AF)
+private val CardDark     = Color(0xFF0D1F3A)
 
 data class QariOption(val key: String, val nameAr: String, val nameEn: String)
 
 val qariList = listOf(
-    QariOption("makkah",              "أذان مكة المكرمة",        "Makkah"),
-    QariOption("mishary_alafasi",     "مشاري راشد العفاسي",      "Mishary Alafasi"),
-    QariOption("abed_albaset",        "عبد الباسط عبد الصمد",    "Abed Albaset"),
-    QariOption("al_hosary",           "محمود خليل الحصري",       "Al-Hosary"),
-    QariOption("al_nakshabandy",      "مصطفى إسماعيل النقشبندي","Al-Nakshabandy"),
-    QariOption("mansoor_al_zahrani",  "منصور الزهراني",          "Mansoor Al-Zahrani"),
-    QariOption("mohamed_refat",       "محمد رفعت",               "Mohamed Refat"),
-    QariOption("mohammed_almenshawy", "محمد صديق المنشاوي",      "Al-Menshawy"),
-    QariOption("nasser_alqatami",     "ناصر القطامي",            "Nasser Al-Qatami"),
-    QariOption("suhaib_khatba",       "شعيب خطبة",               "Suhaib Khatba")
+    QariOption("makkah",              "أذان مكة المكرمة",         "Makkah"),
+    QariOption("mishary_alafasi",     "مشاري راشد العفاسي",       "Mishary Alafasi"),
+    QariOption("abed_albaset",        "عبد الباسط عبد الصمد",     "Abed Albaset"),
+    QariOption("al_hosary",           "محمود خليل الحصري",        "Al-Hosary"),
+    QariOption("al_nakshabandy",      "مصطفى إسماعيل النقشبندي",  "Al-Nakshabandy"),
+    QariOption("mansoor_al_zahrani",  "منصور الزهراني",           "Mansoor Al-Zahrani"),
+    QariOption("mohamed_refat",       "محمد رفعت",                "Mohamed Refat"),
+    QariOption("mohammed_almenshawy", "محمد صديق المنشاوي",       "Al-Menshawy"),
+    QariOption("nasser_alqatami",     "ناصر القطامي",             "Nasser Al-Qatami"),
+    QariOption("suhaib_khatba",       "شعيب خطبة",                "Suhaib Khatba")
 )
 
 val calcMethods = listOf(
@@ -51,7 +58,7 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val prefs   = context.getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
 
-    var selectedQari   by remember { mutableStateOf(prefs.getString("azan_qari", "makkah") ?: "makkah") }
+    var selectedQari   by remember { mutableStateOf(prefs.getString("azan_qari",  "makkah") ?: "makkah") }
     var selectedMethod by remember { mutableStateOf(prefs.getString("calcMethod", "Makkah") ?: "Makkah") }
     var asrHanafi      by remember { mutableStateOf(prefs.getBoolean("asrHanafi", false)) }
     var showQariMenu   by remember { mutableStateOf(false) }
@@ -59,10 +66,9 @@ fun SettingsScreen() {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF022C22), Color(0xFF010F0A)))),
+            .background(Brush.verticalGradient(listOf(Color(0xFF0A1628), Color(0xFF000000)))),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        // ── Header ────────────────────────────────────────────────
         item {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -73,21 +79,14 @@ fun SettingsScreen() {
             }
         }
 
-        // ── اختيار القارئ ─────────────────────────────────────────
         item {
             SettingSection(title = "🎙️ صوت الأذان") {
                 val currentQari = qariList.find { it.key == selectedQari }
                 Box {
-                    SettingRow(
-                        label    = "القارئ",
-                        value    = currentQari?.nameAr ?: "أذان مكة",
-                        onClick  = { showQariMenu = true }
-                    )
-                    DropdownMenu(
-                        expanded        = showQariMenu,
-                        onDismissRequest = { showQariMenu = false },
-                        modifier = Modifier.background(Color(0xFF022C22))
-                    ) {
+                    SettingRow(label = "القارئ", value = currentQari?.nameAr ?: "أذان مكة",
+                        onClick = { showQariMenu = true })
+                    DropdownMenu(expanded = showQariMenu, onDismissRequest = { showQariMenu = false },
+                        modifier = Modifier.background(CardDark)) {
                         qariList.forEach { qari ->
                             DropdownMenuItem(
                                 text = {
@@ -110,7 +109,6 @@ fun SettingsScreen() {
             }
         }
 
-        // ── طريقة حساب الصلاة ─────────────────────────────────────
         item {
             SettingSection(title = "🕌 حساب مواقيت الصلاة") {
                 Box {
@@ -119,11 +117,8 @@ fun SettingsScreen() {
                         value   = calcMethods.find { it.first == selectedMethod }?.second ?: selectedMethod,
                         onClick = { showMethodMenu = true }
                     )
-                    DropdownMenu(
-                        expanded         = showMethodMenu,
-                        onDismissRequest = { showMethodMenu = false },
-                        modifier = Modifier.background(Color(0xFF022C22))
-                    ) {
+                    DropdownMenu(expanded = showMethodMenu, onDismissRequest = { showMethodMenu = false },
+                        modifier = Modifier.background(CardDark)) {
                         calcMethods.forEach { (key, label) ->
                             DropdownMenuItem(
                                 text = {
@@ -140,15 +135,10 @@ fun SettingsScreen() {
                         }
                     }
                 }
-
                 Spacer(Modifier.height(4.dp))
-
-                // مذهب العصر
                 Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CardDark)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                        .background(CardDark).padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -156,30 +146,20 @@ fun SettingsScreen() {
                         Text("وقت العصر الحنفي", fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
                         Text("يأخذ بالرأي الحنفي في حساب وقت العصر", fontSize = 11.sp, color = TextSecondary)
                     }
-                    Switch(
-                        checked = asrHanafi,
-                        onCheckedChange = {
-                            asrHanafi = it
-                            prefs.edit().putBoolean("asrHanafi", it).apply()
-                        },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Gold, checkedTrackColor = GoldDim)
-                    )
+                    Switch(checked = asrHanafi, onCheckedChange = {
+                        asrHanafi = it
+                        prefs.edit().putBoolean("asrHanafi", it).apply()
+                    }, colors = SwitchDefaults.colors(checkedThumbColor = Gold, checkedTrackColor = GoldDim))
                 }
             }
         }
 
-        // ── معلومات التطبيق ───────────────────────────────────────
         item {
             SettingSection(title = "ℹ️ عن التطبيق") {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = CardDark),
-                    shape  = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(20.dp)
-                    ) {
+                Card(colors = CardDefaults.cardColors(containerColor = CardDark),
+                    shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(20.dp)) {
                         Text("🕌", fontSize = 36.sp)
                         Spacer(Modifier.height(8.dp))
                         Text("Salat Muslim Pro", fontSize = 18.sp, color = Gold, fontWeight = FontWeight.Bold)
@@ -202,8 +182,7 @@ fun SettingsScreen() {
 @Composable
 fun SettingSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
-        Text(title, fontSize = 13.sp, color = Gold,
-            fontWeight = FontWeight.Bold,
+        Text(title, fontSize = 13.sp, color = Gold, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { content() }
     }
@@ -212,12 +191,9 @@ fun SettingSection(title: String, content: @Composable ColumnScope.() -> Unit) {
 @Composable
 fun SettingRow(label: String, value: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(CardDark)
-            .border(1.dp, GoldDim, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .background(CardDark).border(1.dp, GoldDim, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
