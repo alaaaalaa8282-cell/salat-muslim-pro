@@ -88,7 +88,7 @@ object PrayerCalculator {
     ): List<PrayerTime> {
         val M = METHODS[method] ?: METHODS["Makkah"]!!
         val AF = if (asrMethod == "Hanafi") 2 else 1
-        val tz = -date.timeZone.getOffset(date.timeInMillis) / 3600000.0
+        val tz = date.timeZone.getOffset(date.timeInMillis) / 3600000.0
 
         val jd = julianDay(date.get(Calendar.YEAR), date.get(Calendar.MONTH) + 1, date.get(Calendar.DAY_OF_MONTH))
         val (dec, eqt) = sunPosition(jd)
@@ -148,3 +148,4 @@ object PrayerCalculator {
         return Triple(hd, months.getOrNull(hm - 1) ?: "", hy)
     }
 }
+
