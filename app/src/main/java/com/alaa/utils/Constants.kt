@@ -1,10 +1,10 @@
-package com.alaa.presentation.base
+package com.alaa.utils
 
 object Constants {
-    const val ACTION_STOP_AZAN   = "com.alaa.STOP_AZAN"
-    const val PRAYER_NAME_KEY    = "prayer_name"
-    const val ACTION_PLAY_AZAN   = "com.alaa.PLAY_AZAN"
-    const val CHANNEL_AZAN_ID    = "azan_channel"
-    const val CHANNEL_PRAYER_ID  = "prayer_channel"
-    const val NOTIF_AZAN_ID      = 1001
+    const val PRAYER_NAME_KEY     = "prayer_name"
+    const val ACTION_STOP_AZAN    = "com.alaa.STOP_AZAN"
+    const val ACTION_AZAN_DONE    = "com.alaa.AZAN_DONE"
+    const val AZAN_CHANNEL_ID     = "azan_channel"
+    const val AZAN_NOTIF_ID       = 100
+    const val PRAYER_REQUEST_CODE = 200
 }

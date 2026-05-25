@@ -1,7 +1,9 @@
+import java.util.Properties
+
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.android.application") version "8.5.2"
+    id("org.jetbrains.kotlin.android") version "2.0.21"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
 }
 
 android {
@@ -18,11 +20,15 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile     = file(project.findProperty("STORE_FILE")    ?: "keystore.jks")
-            storePassword = (project.findProperty("STORE_PASSWORD")    ?: "") as String
-            keyAlias      = (project.findProperty("KEY_ALIAS")         ?: "") as String
-            keyPassword   = (project.findProperty("KEY_PASSWORD")      ?: "") as String
-            storeType     = "PKCS12"
+            val storeFile0 = System.getenv("STORE_FILE") ?: project.findProperty("STORE_FILE")?.toString()
+            val storePass  = System.getenv("STORE_PASSWORD") ?: project.findProperty("STORE_PASSWORD")?.toString()
+            val keyAlias0  = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
+            val keyPass    = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
+
+            if (storeFile0 != null) storeFile = file(storeFile0)
+            if (storePass  != null) storePassword = storePass
+            if (keyAlias0  != null) keyAlias = keyAlias0
+            if (keyPass    != null) keyPassword = keyPass
         }
     }
 
