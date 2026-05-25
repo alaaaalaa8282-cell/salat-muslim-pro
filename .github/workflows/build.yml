@@ -23,7 +23,7 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Validate gradle-wrapper.jar
+      - name: Regenerate gradle wrapper
         run: |
           JAR="gradle/wrapper/gradle-wrapper.jar"
           SIZE=$(stat -c%s "$JAR" 2>/dev/null || echo 0)
@@ -37,35 +37,46 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Decode keystore
+      - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/keystore.jks
-          echo "✅ Keystore size: $(stat -c%s $GITHUB_WORKSPACE/keystore.p12) bytes"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.p12
+          ls -la keystore.p12
 
-      - name: Build Signed Release APK
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Sign APK
         run: |
-          ./gradlew assembleRelease \
-            -PSTORE_FILE="$GITHUB_WORKSPACE/keystore.p12" \
-            -PSTORE_PASSWORD="${{ secrets.STORE_PASSWORD }}" \
-            -PKEY_ALIAS="${{ secrets.KEY_ALIAS }}" \
-            -PKEY_PASSWORD="${{ secrets.KEY_PASSWORD }}" \
-            --no-daemon \
-            --stacktrace
+          # إيجاد apksigner
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          echo "Build tools: $BUILD_TOOLS_DIR"
 
-      - name: Verify APK is signed
-        run: |
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          echo "APK: $APK"
-          # التحقق إن الـ APK موقّع
-          $JAVA_HOME/bin/jarsigner -verify "$APK" && echo "✅ APK موقّع بنجاح" || echo "❌ APK غير موقّع"
-          echo "apk_path=$APK" >> $GITHUB_ENV
+          UNSIGNED=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
+          SIGNED="app/build/outputs/apk/release/salat-muslim-pro.apk"
 
-      - name: Upload APK as artifact
+          echo "Signing: $UNSIGNED"
+
+          $BUILD_TOOLS_DIR/apksigner sign \
+            --ks keystore.p12 \
+            --ks-pass pass:"${{ secrets.STORE_PASSWORD }}" \
+            --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
+            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+            --out "$SIGNED" \
+            "$UNSIGNED"
+
+          # تحقق
+          $BUILD_TOOLS_DIR/apksigner verify --verbose "$SIGNED"
+          echo "APK_PATH=$SIGNED" >> $GITHUB_ENV
+
+      - name: Clean up keystore
+        if: always()
+        run: rm -f keystore.jks
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: salat-muslim-pro-signed
-          path: ${{ env.apk_path }}
-          retention-days: 30
+          path: ${{ env.APK_PATH }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -75,7 +86,7 @@ jobs:
           body: |
             🕌 تطبيق صلات مسلم برو — نسخة موقّعة
             🤲 إهداء إلى روح محمد عبد العظيم الطويل رحمه الله
-          files: ${{ env.apk_path }}
+          files: ${{ env.APK_PATH }}
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
