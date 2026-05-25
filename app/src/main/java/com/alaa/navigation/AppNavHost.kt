@@ -38,12 +38,8 @@ private val navItems = listOf(
     BottomNavItem("السبحة",   Icons.Default.Star,          Screen.Mesbaha),
     BottomNavItem("تحديات",   Icons.Default.FitnessCenter, Screen.Challenges),
     BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
-    BottomNavItem("راديو",    Icons.Default.Radio,         Screen.Radio),   // ← جديد
-    NavigationBarItem(
-    selected = currentRoute == "adhkar",
-    onClick = { navController.navigate("adhkar") },
-    icon = { Text("📖", fontSize = 20.sp) },
-    label = { Text("الأذكار") }
+    BottomNavItem("راديو", Icons.Default.Radio, Screen.Radio),
+    BottomNavItem("أذكار", Icons.Default.Nightlight, Screen.Adhkar),
 )
 )
 
@@ -96,7 +92,7 @@ fun AppNavHost() {
             composable(Screen.Challenges.route)  { ChallengesScreen() }
             composable(Screen.Quran.route)       { QuranScreen() }
             composable(Screen.Radio.route)       { RadioScreen() }   // ← جديد
-           composable("adhkar") { AdhkarScreen() }
+           composable(Screen.Adhkar.route)       { AdhkarScreen() }
             composable(Screen.Settings.route)    { SettingsScreen() }
         }
     }
