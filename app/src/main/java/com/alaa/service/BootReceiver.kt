@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import com.alaa.MainActivity
-import com.alaa.data.repository.PrayerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -25,12 +24,12 @@ class BootReceiver : BroadcastReceiver() {
                     || action == Intent.ACTION_TIME_CHANGED
                     || action == Intent.ACTION_TIMEZONE_CHANGED
                 ) {
-                    try {
-                        val repo = GlobalContext.get().get<PrayerRepository>()
-                        repo.reschedulePrayerAlarms(context)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    val alarmIntent = Intent(context, PrayerAlarmService::class.java)
+           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(alarmIntent)
+          } else {
+             context.startService(alarmIntent)
+              }
                 }
 
                 // ── 2. فقط عند البوت — إرجاع الخدمات وفتح التطبيق ─────────
