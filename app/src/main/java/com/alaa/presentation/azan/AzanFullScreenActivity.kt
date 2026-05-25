@@ -285,4 +285,3 @@ fun AzanFullScreenContent(prayerName: String, bgResId: Int, onStop: () -> Unit) 
         }
     }
 }
-
