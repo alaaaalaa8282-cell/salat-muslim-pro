@@ -1,55 +1,51 @@
-package com.alaa.domain.usecase
+package com.alaa.utils
 
+import android.annotation.SuppressLint
 import android.app.AlarmManager
-import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.location.Location
-import android.location.LocationManager
-import com.alaa.data.PrayerCalculator
-import com.alaa.presentation.base.Constants
-import com.alaa.presentation.service.PrayerAlarmService
-import java.util.Calendar
+import android.os.Build
+import com.alaa.service.PrayerAlarmReceiver
+import java.util.Date
 
-class PrayerSchedulingUseCase(private val app: Application) {
+object PrayerScheduler {
 
-    fun rescheduleTodayPrayerAlarms() {
-        val prefs = app.getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
-        val lat = prefs.getFloat("lat", 30.0f).toDouble()
-        val lng = prefs.getFloat("lng", 31.0f).toDouble()
-        if (lat == 30.0 && lng == 31.0) return  // no saved location yet
+    @SuppressLint("ScheduleExactAlarm")
+    fun schedulePrayer(context: Context, prayerName: String, time: Date, requestCode: Int) {
+        if (time.before(Date())) return
+        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pi = PendingIntent.getBroadcast(
+            context, requestCode,
+            Intent(context, PrayerAlarmReceiver::class.java).apply {
+                putExtra(Constants.PRAYER_NAME_KEY, prayerName)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, time.time, pi)
+            else
+                am.setExact(AlarmManager.RTC_WAKEUP, time.time, pi)
+        } catch (_: SecurityException) {
+            am.set(AlarmManager.RTC_WAKEUP, time.time, pi)
+        }
+    }
 
-        val times = PrayerCalculator.calculate(lat, lng)
-        val am = app.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val now = System.currentTimeMillis()
+    fun scheduleAllPrayers(context: Context, prayerTimes: Map<String, Date>) {
+        listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء").forEachIndexed { i, name ->
+            prayerTimes[name]?.let { schedulePrayer(context, name, it, Constants.PRAYER_REQUEST_CODE + i) }
+        }
+    }
 
-        val salahKeys = listOf("الفجر", "الظهر", "العصر", "المغرب", "العشاء")
-        var reqCode = 2000
-
-        times.filter { it.nameAr in salahKeys }.forEach { prayer ->
-            val parts = prayer.time.split(":")
-            if (parts.size < 2) return@forEach
-            val cal = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, parts[0].toIntOrNull() ?: return@forEach)
-                set(Calendar.MINUTE, parts[1].toIntOrNull() ?: return@forEach)
-                set(Calendar.SECOND, 0)
-                if (timeInMillis <= now) add(Calendar.DAY_OF_YEAR, 1)
-            }
-
-            val intent = Intent(app, PrayerAlarmService::class.java).apply {
-                putExtra(Constants.PRAYER_NAME_KEY, prayer.nameAr)
-                putExtra("prayer_key", prayer.nameEn)  // Fajr, Dhuhr, Asr, Maghrib, Isha
-            }
-            val pi = PendingIntent.getForegroundService(
-                app, reqCode++, intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            try {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
-            } catch (e: Exception) {
-                am.set(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
-            }
+    fun cancelAll(context: Context) {
+        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        for (i in 0..4) {
+            PendingIntent.getBroadcast(
+                context, Constants.PRAYER_REQUEST_CODE + i,
+                Intent(context, PrayerAlarmReceiver::class.java),
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )?.let { am.cancel(it) }
         }
     }
 }
