@@ -106,11 +106,21 @@ class CountdownNotificationService : Service() {
             val m = (diff % 3_600_000) / 60_000
             val s = (diff % 60_000) / 1_000
             upcoming.key to "%02d:%02d:%02d".format(h, m, s)
-        } else {
-            // كل صلوات اليوم انتهت — الفجر غداً
-            "الفجر" to "--:--:--"
-        }
+} else {
+    val tomorrowFajr = prayerTimes["الفجر"]
+    if (tomorrowFajr != null) {
+        val cal = Calendar.getInstance()
+        cal.time = tomorrowFajr
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        val diff = cal.time.time - Date().time
+        val h = diff / 3_600_000
+        val m = (diff % 3_600_000) / 60_000
+        val s = (diff % 60_000) / 1_000
+        "الفجر" to "%02d:%02d:%02d".format(h, m, s)
+    } else {
+        "الفجر" to "--:--:--"
     }
+}
 
     private fun buildNotification(prayerName: String, countdown: String) =
         NotificationCompat.Builder(this, CHANNEL_ID)
