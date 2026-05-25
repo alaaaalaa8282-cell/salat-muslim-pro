@@ -18,7 +18,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.alaa.presentation.theme.*
+import com.alaa.ui.theme.Gold
+import com.alaa.ui.theme.GoldLight
+import com.alaa.ui.theme.DarkBg
+import com.alaa.ui.theme.DarkBg2
+
+private val GoldDim       = Color(0xFF8B6914).copy(alpha = 0.4f)
+private val TextPrimary   = Color(0xFFE8F4F0)
+private val TextSecondary = Color(0xFF9CA3AF)
+private val CardDark      = Color(0xFF0D1F3A)
 
 data class QariOption(val key: String, val nameAr: String)
 
@@ -75,7 +83,7 @@ fun SettingsScreen() {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color(0xFF022C22), Color(0xFF010F0A)))),
+            .background(Brush.verticalGradient(listOf(DarkBg, DarkBg2))),
         contentPadding = PaddingValues(bottom = 32.dp)
     ) {
         item {
@@ -129,7 +137,7 @@ fun SettingsScreen() {
                             DropdownMenu(
                                 expanded = expanded.value,
                                 onDismissRequest = { expanded.value = false },
-                                modifier = Modifier.background(Color(0xFF022C22))
+                                modifier = Modifier.background(CardDark)
                             ) {
                                 qariList.forEach { qari ->
                                     DropdownMenuItem(
@@ -179,7 +187,7 @@ fun SettingsScreen() {
                     DropdownMenu(
                         expanded = showMethodMenu,
                         onDismissRequest = { showMethodMenu = false },
-                        modifier = Modifier.background(Color(0xFF022C22))
+                        modifier = Modifier.background(CardDark)
                     ) {
                         calcMethods.forEach { (key, label) ->
                             DropdownMenuItem(
@@ -251,3 +259,4 @@ fun SettingsScreen() {
         }
     }
 }
+
