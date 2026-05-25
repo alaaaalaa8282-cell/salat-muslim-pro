@@ -48,11 +48,20 @@ private val navItems = listOf(
 private val bottomBarScreens = navItems.map { it.screen.route }
 
 @Composable
-fun AppNavHost() {
+fun AppNavHost(startScreen: String? = null) {
     val navController = rememberNavController()
     val backStack     by navController.currentBackStackEntryAsState()
     val currentRoute  = backStack?.destination?.route
-
+LaunchedEffect(startScreen) {
+    if (!startScreen.isNullOrBlank()) {
+        navController.navigate(startScreen) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState    = true
+        }
+    }
+}
+    
     Scaffold(
         bottomBar = {
             if (currentRoute in bottomBarScreens) {
