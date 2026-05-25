@@ -2,11 +2,11 @@ package com.alaa.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -24,64 +24,58 @@ import com.alaa.presentation.home.HomeScreen
 import com.alaa.presentation.mesbaha.MesbahaScreen
 import com.alaa.presentation.prayer.PrayerTimesScreen
 import com.alaa.presentation.quran.QuranScreen
-import com.alaa.ui.theme.DarkBg
+import com.alaa.presentation.screen.settings.SettingsScreen
 import com.alaa.ui.theme.DarkBg2
 import com.alaa.ui.theme.Gold
 
-data class BottomNavItem(
-    val label: String,
-    val icon: ImageVector,
-    val screen: Screen
-)
+data class BottomNavItem(val label: String, val icon: ImageVector, val screen: Screen)
 
 private val navItems = listOf(
-    BottomNavItem("الرئيسية", Icons.Default.Home,       Screen.Home),
-    BottomNavItem("الأذكار",  Icons.Default.MusicNote,  Screen.Dhikr),
-    BottomNavItem("السبحة",   Icons.Default.Star,        Screen.Mesbaha),
-    BottomNavItem("تحديات",   Icons.Default.FitnessCenter, Screen.Challenges),
-    BottomNavItem("القرآن",   Icons.Default.MenuBook,    Screen.Quran),
+    BottomNavItem("الرئيسية", Icons.Default.Home,           Screen.Home),
+    BottomNavItem("الأذكار",  Icons.Default.MusicNote,      Screen.Dhikr),
+    BottomNavItem("السبحة",   Icons.Default.Star,            Screen.Mesbaha),
+    BottomNavItem("تحديات",   Icons.Default.FitnessCenter,   Screen.Challenges),
+    BottomNavItem("القرآن",   Icons.Default.MenuBook,        Screen.Quran),
 )
+
+// الشاشات اللي بيظهر فيها الـ bottom bar
+private val bottomBarScreens = navItems.map { it.screen.route }
 
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
-    val backStack by navController.currentBackStackEntryAsState()
-    val currentRoute = backStack?.destination?.route
+    val backStack     by navController.currentBackStackEntryAsState()
+    val currentRoute  = backStack?.destination?.route
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = DarkBg2) {
-                navItems.forEach { item ->
-                    val selected = currentRoute == item.screen.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(item.screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState     = true
-                            }
-                        },
-                        icon = {
-                            Icon(item.icon, contentDescription = item.label,
-                                tint = if (selected) Gold else Color.Gray)
-                        },
-                        label = {
-                            Text(item.label, fontSize = 10.sp,
-                                color = if (selected) Gold else Color.Gray)
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = Gold.copy(alpha = 0.15f)
+            // الـ bottom bar مش بيظهر في شاشة الإعدادات
+            if (currentRoute in bottomBarScreens) {
+                NavigationBar(containerColor = DarkBg2) {
+                    navItems.forEach { item ->
+                        val selected = currentRoute == item.screen.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick  = {
+                                navController.navigate(item.screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState    = true
+                                }
+                            },
+                            icon  = { Icon(item.icon, null, tint = if (selected) Gold else Color.Gray) },
+                            label = { Text(item.label, fontSize = 10.sp, color = if (selected) Gold else Color.Gray) },
+                            colors = NavigationBarItemDefaults.colors(indicatorColor = Gold.copy(alpha = 0.15f))
                         )
-                    )
+                    }
                 }
             }
         }
     ) { innerPadding ->
         NavHost(
-            navController  = navController,
+            navController    = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier         = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route)        { HomeScreen(navController) }
             composable(Screen.PrayerTimes.route) { PrayerTimesScreen() }
@@ -89,6 +83,7 @@ fun AppNavHost() {
             composable(Screen.Mesbaha.route)     { MesbahaScreen() }
             composable(Screen.Challenges.route)  { ChallengesScreen() }
             composable(Screen.Quran.route)       { QuranScreen() }
+            composable(Screen.Settings.route)    { SettingsScreen() }
         }
     }
 }
