@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.alaa.presentation.challenges.ChallengesScreen
 import com.alaa.presentation.dhikr.DhikrScreen
+import com.alaa.presentation.dhikr.AdhkarScreen
 import com.alaa.presentation.home.HomeScreen
 import com.alaa.presentation.mesbaha.MesbahaScreen
 import com.alaa.presentation.prayer.PrayerTimesScreen
@@ -39,9 +40,9 @@ private val navItems = listOf(
     BottomNavItem("تحديات",   Icons.Default.FitnessCenter, Screen.Challenges),
     BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
     BottomNavItem("راديو", Icons.Default.Radio, Screen.Radio),
-    BottomNavItem("أذكار", Icons.Default.Nightlight, Screen.Adhkar),
+    BottomNavItem("أذكار", Icons.Default.AutoAwesome, Screen.Adhkar),
 )
-)
+
 
 // الشاشات اللي بيظهر فيها الـ bottom bar
 private val bottomBarScreens = navItems.map { it.screen.route }
