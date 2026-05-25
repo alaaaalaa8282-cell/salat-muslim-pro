@@ -1,9 +1,7 @@
-import java.util.Properties
-
 plugins {
-    id("com.android.application") version "8.5.2"
-    id("org.jetbrains.kotlin.android") version "2.0.21"
-    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21"
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -20,7 +18,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // يقرأ من -P (build.yml) أو من environment variable
             val storeFile0 = project.findProperty("STORE_FILE")?.toString()
                 ?: System.getenv("STORE_FILE")
             val storePass  = project.findProperty("STORE_PASSWORD")?.toString()
