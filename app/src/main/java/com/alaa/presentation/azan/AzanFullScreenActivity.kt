@@ -132,7 +132,7 @@ class AzanFullScreenActivity : ComponentActivity() {
                         Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             }
     }
-}
+
 private fun requestOverlayPermissionIfNeeded() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         if (!Settings.canDrawOverlays(this)) {
@@ -157,7 +157,8 @@ private fun requestBatteryOptimizationExemption() {
         )
     }
 }
-@Composable
+}
+    @Composable
 fun AzanFullScreenContent(prayerName: String, onStop: () -> Unit) {
     val azanLines = listOf(
         "اللهُ أَكْبَر، اللهُ أَكْبَر",
