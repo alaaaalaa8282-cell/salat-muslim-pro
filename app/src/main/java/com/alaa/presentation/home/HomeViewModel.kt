@@ -1,9 +1,8 @@
 package com.alaa.presentation.home
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
-import android.os.Looper
+import android.location.LocationManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alaa.data.model.PrayerData
@@ -12,7 +11,6 @@ import com.alaa.data.prefs.PrefsManager
 import com.alaa.data.repository.PrayerRepository
 import com.alaa.data.repository.WeatherRepository
 import com.alaa.utils.PrayerScheduler
-import com.google.android.gms.location.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,75 +39,57 @@ class HomeViewModel(
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
     fun init(context: Context) {
-        // لو عندنا موقع محفوظ من قبل — استخدمه فوراً
         val savedLat = prefs.latitude
         val savedLon = prefs.longitude
         if (savedLat != 0.0 && savedLon != 0.0) {
             _state.update { it.copy(cityName = prefs.cityName, lat = savedLat, lon = savedLon) }
             loadData(context, savedLat, savedLon)
         }
-        // وبعدين جيب الموقع الجديد
         fetchLocation(context)
         startCountdownTick()
     }
 
-    @SuppressLint("MissingPermission")
+    @Suppress("MissingPermission")
     fun fetchLocation(context: Context) {
         try {
-            val fusedClient = LocationServices.getFusedLocationProviderClient(context)
-
-            // أولاً جرب getLastLocation
-            fusedClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
-                    onLocationReceived(context, location.latitude, location.longitude)
-                } else {
-                    // لو مفيش cached location — اطلب واحدة جديدة
-                    requestFreshLocation(context, fusedClient)
-                }
-            }.addOnFailureListener {
-                requestFreshLocation(context, fusedClient)
+            val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val providers = listOf(
+                LocationManager.GPS_PROVIDER,
+                LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER
+            )
+            var lat = 0.0
+            var lon = 0.0
+            for (provider in providers) {
+                try {
+                    val loc = lm.getLastKnownLocation(provider)
+                    if (loc != null) {
+                        lat = loc.latitude
+                        lon = loc.longitude
+                        break
+                    }
+                } catch (_: Exception) {}
             }
-        } catch (e: Exception) {
+            if (lat != 0.0 || lon != 0.0) {
+                prefs.latitude  = lat
+                prefs.longitude = lon
+                try {
+                    @Suppress("DEPRECATION")
+                    val addr = Geocoder(context, Locale("ar")).getFromLocation(lat, lon, 1)
+                    val city = addr?.firstOrNull()?.locality
+                        ?: addr?.firstOrNull()?.subAdminArea
+                        ?: addr?.firstOrNull()?.adminArea
+                        ?: "موقعك"
+                    prefs.cityName = city
+                    _state.update { it.copy(cityName = city) }
+                } catch (_: Exception) {}
+                loadData(context, lat, lon)
+            } else {
+                _state.update { it.copy(cityName = "فعّل الـ GPS", isLoading = false) }
+            }
+        } catch (_: Exception) {
             _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
         }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun requestFreshLocation(context: Context, fusedClient: FusedLocationProviderClient) {
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
-            .setWaitForAccurateLocation(false)
-            .setMaxUpdates(1)
-            .build()
-
-        val callback = object : LocationCallback() {
-            override fun onLocationResult(result: LocationResult) {
-                fusedClient.removeLocationUpdates(this)
-                val location = result.lastLocation ?: return
-                onLocationReceived(context, location.latitude, location.longitude)
-            }
-        }
-
-        fusedClient.requestLocationUpdates(request, callback, Looper.getMainLooper())
-    }
-
-    private fun onLocationReceived(context: Context, lat: Double, lon: Double) {
-        prefs.latitude  = lat
-        prefs.longitude = lon
-
-        // اسم المدينة
-        try {
-            @Suppress("DEPRECATION")
-            val addresses = Geocoder(context, Locale("ar"))
-                .getFromLocation(lat, lon, 1)
-            val city = addresses?.firstOrNull()?.locality
-                ?: addresses?.firstOrNull()?.subAdminArea
-                ?: addresses?.firstOrNull()?.adminArea
-                ?: "موقعك"
-            prefs.cityName = city
-            _state.update { it.copy(cityName = city) }
-        } catch (_: Exception) {}
-
-        loadData(context, lat, lon)
     }
 
     private fun loadData(context: Context, lat: Double, lon: Double) {
