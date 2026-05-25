@@ -15,11 +15,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val startScreen = intent.getStringExtra("start_screen")
       CountdownNotificationService.start(this)
         setContent {
             AlaAppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AppNavHost()
+                    AppNavHost(startScreen = startScreen)
                 }
             }
         }
