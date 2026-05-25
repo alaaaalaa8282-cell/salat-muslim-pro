@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val startScreen = intent.getStringExtra("start_screen")
+        val startScreen = intent.getStringExtra("start_screen") ?: "home"
       CountdownNotificationService.start(this)
         setContent {
             AlaAppTheme {
