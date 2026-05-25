@@ -18,20 +18,11 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFile0 = project.findProperty("STORE_FILE")?.toString()
-                ?: System.getenv("STORE_FILE")
-            val storePass  = project.findProperty("STORE_PASSWORD")?.toString()
-                ?: System.getenv("STORE_PASSWORD")
-            val keyAlias0  = project.findProperty("KEY_ALIAS")?.toString()
-                ?: System.getenv("KEY_ALIAS")
-            val keyPass    = project.findProperty("KEY_PASSWORD")?.toString()
-                ?: System.getenv("KEY_PASSWORD")
-
-            if (storeFile0 != null) storeFile = file(storeFile0)
-            if (storePass  != null) storePassword = storePass
-            if (keyAlias0  != null) keyAlias = keyAlias0
-            if (keyPass    != null) keyPassword = keyPass
-            storeType = "PKCS12"
+            storeFile     = file(project.findProperty("STORE_FILE")    ?: "keystore.jks")
+            storePassword = (project.findProperty("STORE_PASSWORD")    ?: "") as String
+            keyAlias      = (project.findProperty("KEY_ALIAS")         ?: "") as String
+            keyPassword   = (project.findProperty("KEY_PASSWORD")      ?: "") as String
+            storeType     = "PKCS12"
         }
     }
 
