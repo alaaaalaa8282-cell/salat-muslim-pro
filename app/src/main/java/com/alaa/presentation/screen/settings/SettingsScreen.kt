@@ -22,6 +22,11 @@ import com.alaa.ui.theme.Gold
 import com.alaa.ui.theme.GoldLight
 import com.alaa.ui.theme.DarkBg
 import com.alaa.ui.theme.DarkBg2
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.alaa.R
 
 private val GoldDim       = Color(0xFF8B6914).copy(alpha = 0.4f)
 private val TextPrimary   = Color(0xFFE8F4F0)
@@ -31,6 +36,7 @@ private val CardDark      = Color(0xFF0D1F3A)
 data class QariOption(val key: String, val nameAr: String)
 
 val qariList = listOf(
+    QariOption("silent", "🔇 صامت"),
     QariOption("makkah",               "أذان مكة المكرمة"),
     QariOption("mishary_alafasi",      "مشاري راشد العفاسي"),
     QariOption("abed_albaset",         "عبد الباسط عبد الصمد"),
@@ -242,7 +248,15 @@ fun SettingsScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(20.dp)
                 ) {
-                    Text("🕌", fontSize = 36.sp)
+                    Image(
+    painter = painterResource(id = R.drawable.father_bg),
+    contentDescription = null,
+    contentScale = ContentScale.Crop,
+    modifier = Modifier
+        .size(120.dp)
+        .clip(CircleShape)
+        .border(2.dp, Gold, CircleShape)
+)
                     Spacer(Modifier.height(8.dp))
                     Text("Salat Muslim Pro", fontSize = 18.sp, color = Gold, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
