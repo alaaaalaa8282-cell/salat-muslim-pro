@@ -3,6 +3,7 @@ package com.alaa.presentation.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -14,7 +15,6 @@ import android.os.Build
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.alaa.R
-import com.alaa.presentation.base.Constants
 import com.alaa.presentation.azan.AzanFullScreenActivity
 
 class PrayerAlarmService : Service() {
@@ -26,24 +26,24 @@ class PrayerAlarmService : Service() {
     override fun onBind(intent: Intent?) = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == Constants.ACTION_STOP_AZAN) { stopSelf(); return START_NOT_STICKY }
+        if (intent?.action == ACTION_STOP_AZAN) { stopSelf(); return START_NOT_STICKY }
 
-        val prayerName = intent?.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
-        val prayerKey  = intent?.getStringExtra("prayer_key") ?: "Fajr"
+        val prayerName = intent?.getStringExtra(PRAYER_NAME_KEY) ?: "الصلاة"
+        val prayerKey  = intent?.getStringExtra(PRAYER_KEY) ?: "Fajr"
 
         isPlaying = true
         acquireWakeLock()
         createChannel()
-        startForeground(Constants.NOTIF_AZAN_ID, buildNotification(prayerName))
-        startActivity(AzanFullScreenActivity.newIntent(this, prayerName))
+        startForeground(NOTIF_ID, buildNotification(prayerName))
+
+        val fullScreenIntent = AzanFullScreenActivity.newIntent(this, prayerName)
+        startActivity(fullScreenIntent)
         playAzan(prayerKey)
         return START_NOT_STICKY
     }
 
-    // ── يقرأ الأذان المختار لكل صلاة على حدة ──────────────────────
     private fun getAzanRes(prayerKey: String): Int {
         val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
-        // كل صلاة ليها مفتاحها الخاص prayerAdhan_Fajr / prayerAdhan_Dhuhr ...
         val qariKey = prefs.getString("prayerAdhan_$prayerKey", "makkah") ?: "makkah"
         return when (qariKey) {
             "mishary_alafasi"      -> R.raw.azan_mishary_alafasi
@@ -87,10 +87,12 @@ class PrayerAlarmService : Service() {
         mediaPlayer = null
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-                audioFocusRequest?.let { (getSystemService(AUDIO_SERVICE) as AudioManager).abandonAudioFocusRequest(it) }
+                audioFocusRequest?.let {
+                    (getSystemService(AUDIO_SERVICE) as AudioManager).abandonAudioFocusRequest(it)
+                }
         } catch (_: Exception) {}
         try { if (wakeLock?.isHeld == true) wakeLock?.release() } catch (_: Exception) {}
-        sendBroadcast(Intent(Constants.ACTION_STOP_AZAN))
+        sendBroadcast(Intent(ACTION_STOP_AZAN))
         super.onDestroy()
     }
 
@@ -103,17 +105,17 @@ class PrayerAlarmService : Service() {
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nm = getSystemService(NotificationManager::class.java)
-            if (nm.getNotificationChannel(Constants.CHANNEL_AZAN_ID) == null)
+            if (nm.getNotificationChannel(CHANNEL_ID) == null)
                 nm.createNotificationChannel(
-                    NotificationChannel(Constants.CHANNEL_AZAN_ID, "الأذان", NotificationManager.IMPORTANCE_HIGH)
+                    NotificationChannel(CHANNEL_ID, "الأذان", NotificationManager.IMPORTANCE_HIGH)
                         .apply { setSound(null, null) }
                 )
         }
     }
 
     private fun buildNotification(prayerName: String): Notification =
-        NotificationCompat.Builder(this, Constants.CHANNEL_AZAN_ID)
-            .setSmallIcon(R.drawable.ic_mosque)
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("وقت صلاة $prayerName")
             .setContentText("حي على الصلاة")
             .setOngoing(true)
@@ -123,7 +125,11 @@ class PrayerAlarmService : Service() {
             .build()
 
     companion object {
+        const val ACTION_STOP_AZAN = "com.alaa.STOP_AZAN"
+        const val PRAYER_NAME_KEY  = "prayer_name"
+        const val PRAYER_KEY       = "prayer_key"
+        const val CHANNEL_ID       = "azan_channel"
+        const val NOTIF_ID         = 1001
         @Volatile var isPlaying: Boolean = false
     }
 }
-
