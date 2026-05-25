@@ -9,11 +9,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.alaa.navigation.AppNavHost
 import com.alaa.ui.theme.AlaAppTheme
+import com.alaa.service.CountdownNotificationService
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+      CountdownNotificationService.start(this)
         setContent {
             AlaAppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
