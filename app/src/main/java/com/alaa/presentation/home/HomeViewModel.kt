@@ -1,7 +1,9 @@
 package com.alaa.presentation.home
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
+import android.os.Looper
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alaa.data.model.PrayerData
@@ -10,6 +12,7 @@ import com.alaa.data.prefs.PrefsManager
 import com.alaa.data.repository.PrayerRepository
 import com.alaa.data.repository.WeatherRepository
 import com.alaa.utils.PrayerScheduler
+import com.google.android.gms.location.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,10 +25,10 @@ import java.util.Locale
 data class HomeState(
     val prayerData:  PrayerData  = PrayerData(),
     val weatherData: WeatherData = WeatherData(),
-    val cityName:    String      = "جارٍ التحديد...",
+    val cityName:    String      = "جارٍ تحديد الموقع...",
     val isLoading:   Boolean     = true,
-    val lat:         Double      = 30.0,
-    val lon:         Double      = 31.0,
+    val lat:         Double      = 0.0,
+    val lon:         Double      = 0.0,
 )
 
 class HomeViewModel(
@@ -38,35 +41,75 @@ class HomeViewModel(
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
     fun init(context: Context) {
-        val lat = prefs.latitude
-        val lon = prefs.longitude
-        _state.update { it.copy(lat = lat, lon = lon, cityName = prefs.cityName) }
-        loadData(context, lat, lon)
+        // لو عندنا موقع محفوظ من قبل — استخدمه فوراً
+        val savedLat = prefs.latitude
+        val savedLon = prefs.longitude
+        if (savedLat != 0.0 && savedLon != 0.0) {
+            _state.update { it.copy(cityName = prefs.cityName, lat = savedLat, lon = savedLon) }
+            loadData(context, savedLat, savedLon)
+        }
+        // وبعدين جيب الموقع الجديد
+        fetchLocation(context)
         startCountdownTick()
     }
 
+    @SuppressLint("MissingPermission")
     fun fetchLocation(context: Context) {
         try {
-            val locationManager = context.getSystemService(Context.LOCATION_SERVICE)
-                    as android.location.LocationManager
-            val provider = android.location.LocationManager.NETWORK_PROVIDER
-            @Suppress("MissingPermission")
-            val loc = locationManager.getLastKnownLocation(provider)
-                ?: locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
-            loc ?: return
-            prefs.latitude  = loc.latitude
-            prefs.longitude = loc.longitude
-            try {
-                @Suppress("DEPRECATION")
-                val addresses = Geocoder(context, Locale("ar"))
-                    .getFromLocation(loc.latitude, loc.longitude, 1)
-                val city = addresses?.firstOrNull()?.locality
-                    ?: addresses?.firstOrNull()?.adminArea ?: "موقعك"
-                prefs.cityName = city
-                _state.update { it.copy(cityName = city) }
-            } catch (_: Exception) {}
-            loadData(context, loc.latitude, loc.longitude)
+            val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+
+            // أولاً جرب getLastLocation
+            fusedClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    onLocationReceived(context, location.latitude, location.longitude)
+                } else {
+                    // لو مفيش cached location — اطلب واحدة جديدة
+                    requestFreshLocation(context, fusedClient)
+                }
+            }.addOnFailureListener {
+                requestFreshLocation(context, fusedClient)
+            }
+        } catch (e: Exception) {
+            _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun requestFreshLocation(context: Context, fusedClient: FusedLocationProviderClient) {
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L)
+            .setWaitForAccurateLocation(false)
+            .setMaxUpdates(1)
+            .build()
+
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                fusedClient.removeLocationUpdates(this)
+                val location = result.lastLocation ?: return
+                onLocationReceived(context, location.latitude, location.longitude)
+            }
+        }
+
+        fusedClient.requestLocationUpdates(request, callback, Looper.getMainLooper())
+    }
+
+    private fun onLocationReceived(context: Context, lat: Double, lon: Double) {
+        prefs.latitude  = lat
+        prefs.longitude = lon
+
+        // اسم المدينة
+        try {
+            @Suppress("DEPRECATION")
+            val addresses = Geocoder(context, Locale("ar"))
+                .getFromLocation(lat, lon, 1)
+            val city = addresses?.firstOrNull()?.locality
+                ?: addresses?.firstOrNull()?.subAdminArea
+                ?: addresses?.firstOrNull()?.adminArea
+                ?: "موقعك"
+            prefs.cityName = city
+            _state.update { it.copy(cityName = city) }
         } catch (_: Exception) {}
+
+        loadData(context, lat, lon)
     }
 
     private fun loadData(context: Context, lat: Double, lon: Double) {
@@ -88,10 +131,13 @@ class HomeViewModel(
         viewModelScope.launch {
             while (isActive) {
                 delay(1_000)
-                val prayer = try {
-                    prayerRepo.getPrayerTimes(prefs.latitude, prefs.longitude)
-                } catch (_: Exception) { continue }
-                _state.update { it.copy(prayerData = prayer) }
+                val lat = prefs.latitude
+                val lon = prefs.longitude
+                if (lat == 0.0 && lon == 0.0) continue
+                try {
+                    val prayer = prayerRepo.getPrayerTimes(lat, lon)
+                    _state.update { it.copy(prayerData = prayer) }
+                } catch (_: Exception) {}
             }
         }
     }
