@@ -105,7 +105,7 @@ class PrayerRepository(private val prefs: PrefsManager) {
                 }
             } catch (_: Exception) {}
         }
-        val now = Calendar.getInstance()
+        val nowCal = Calendar.getInstance()
 val fajrCal = Calendar.getInstance().apply {
     val sdf = SimpleDateFormat("HH:mm", Locale.US)
     val parsed = sdf.parse(timings.getString("Fajr").substring(0, 5)) ?: return@apply
@@ -115,7 +115,7 @@ val fajrCal = Calendar.getInstance().apply {
     set(Calendar.SECOND, 0)
     add(Calendar.DAY_OF_YEAR, 1) // فجر الغد
 }
-val diff = fajrCal.timeInMillis - now.timeInMillis
+val diff = fajrCal.timeInMillis - nowCal.timeInMillis
 val h = diff / 3_600_000
 val m = (diff % 3_600_000) / 60_000
 val s = (diff % 60_000) / 1_000
