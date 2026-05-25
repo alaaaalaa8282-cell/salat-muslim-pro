@@ -20,15 +20,21 @@ android {
 
     signingConfigs {
         create("release") {
-            val storeFile0 = System.getenv("STORE_FILE") ?: project.findProperty("STORE_FILE")?.toString()
-            val storePass  = System.getenv("STORE_PASSWORD") ?: project.findProperty("STORE_PASSWORD")?.toString()
-            val keyAlias0  = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
-            val keyPass    = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
+            // يقرأ من -P (build.yml) أو من environment variable
+            val storeFile0 = project.findProperty("STORE_FILE")?.toString()
+                ?: System.getenv("STORE_FILE")
+            val storePass  = project.findProperty("STORE_PASSWORD")?.toString()
+                ?: System.getenv("STORE_PASSWORD")
+            val keyAlias0  = project.findProperty("KEY_ALIAS")?.toString()
+                ?: System.getenv("KEY_ALIAS")
+            val keyPass    = project.findProperty("KEY_PASSWORD")?.toString()
+                ?: System.getenv("KEY_PASSWORD")
 
             if (storeFile0 != null) storeFile = file(storeFile0)
             if (storePass  != null) storePassword = storePass
             if (keyAlias0  != null) keyAlias = keyAlias0
             if (keyPass    != null) keyPassword = keyPass
+            storeType = "PKCS12"
         }
     }
 
