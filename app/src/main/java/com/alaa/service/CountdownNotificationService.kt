@@ -1,4 +1,4 @@
-herepackage com.alaa.service
+package com.alaa.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
