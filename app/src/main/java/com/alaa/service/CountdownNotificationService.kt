@@ -18,6 +18,8 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import java.text.SimpleDateFormat
 import java.util.*
+import android.app.Notification
+import android.app.PendingIntent
 
 class CountdownNotificationService : Service() {
 
@@ -123,16 +125,23 @@ class CountdownNotificationService : Service() {
         }
     }
 
-    private fun buildNotification(prayerName: String, countdown: String) =
-        NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
-            .setContentTitle("باقي على صلاة $prayerName")
-            .setContentText(countdown)
-            .setOngoing(true)
-            .setSilent(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
+    private fun buildNotification(prayerName: String, countdown: String): Notification {
+    val openIntent = PendingIntent.getActivity(
+        this, 0,
+        Intent(this, com.alaa.MainActivity::class.java),
+        PendingIntent.FLAG_IMMUTABLE
+    )
+    return NotificationCompat.Builder(this, CHANNEL_ID)
+        .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
+        .setContentTitle("باقي على صلاة $prayerName")
+        .setContentText(countdown)
+        .setOngoing(true)
+        .setSilent(true)
+        .setPriority(NotificationCompat.PRIORITY_LOW)
+        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        .setContentIntent(openIntent)
+        .build()
+}
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
