@@ -187,7 +187,7 @@ fun AzanFullScreenContent(prayerName: String, onStop: () -> Unit) {
 
     val animCrossfade by animateFloatAsState(
         targetValue = crossfadeAlpha,
-        animationSpec = tween(10000),
+        animationSpec = tween(6000),
         label = "crossfade"
     )
 
@@ -242,7 +242,7 @@ fun AzanFullScreenContent(prayerName: String, onStop: () -> Unit) {
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(6000)
+            delay(10000)
             lineVisible = false
             delay(400)
             currentLineIndex = (currentLineIndex + 1) % azanLines.size
