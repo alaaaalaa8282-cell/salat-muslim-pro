@@ -39,22 +39,30 @@ class PrayerAlarmService : Service() {
     }
 
     private fun getSelectedAzanRes(): Int {
-        val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
-        val key = prefs.getString("prayerAdhan_$prayerName", "makkah")
-        if (key == "silent") return -1
-        return when (key) {
-            "abed_albaset"        -> com.alaa.R.raw.azan_abed_albaset
-            "al_hosary"           -> com.alaa.R.raw.azan_al_hosary
-            "al_nakshabandy"      -> com.alaa.R.raw.azan_al_nakshabandy
-            "mansoor_al_zahrani"  -> com.alaa.R.raw.azan_mansoor_al_zahrani
-            "mishary_alafasi"     -> com.alaa.R.raw.azan_mishary_alafasi
-            "mohamed_refat"       -> com.alaa.R.raw.azan_mohamed_refat
-            "mohammed_almenshawy" -> com.alaa.R.raw.azan_mohammed_almenshawy
-            "nasser_alqatami"     -> com.alaa.R.raw.azan_nasser_alqatami
-            "suhaib_khatba"       -> com.alaa.R.raw.azan_suhaib_khatba
-            else                  -> com.alaa.R.raw.azan_makkah
-        }
+    val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
+    val enKey = when (prayerName) {
+        "الفجر"  -> "Fajr"
+        "الظهر"  -> "Dhuhr"
+        "العصر"  -> "Asr"
+        "المغرب" -> "Maghrib"
+        "العشاء" -> "Isha"
+        else     -> prayerName
     }
+    val key = prefs.getString("prayerAdhan_$enKey", "makkah")
+    if (key == "silent") return -1
+    return when (key) {
+        "abed_albaset"        -> com.alaa.R.raw.azan_abed_albaset
+        "al_hosary"           -> com.alaa.R.raw.azan_al_hosary
+        "al_nakshabandy"      -> com.alaa.R.raw.azan_al_nakshabandy
+        "mansoor_al_zahrani"  -> com.alaa.R.raw.azan_mansoor_al_zahrani
+        "mishary_alafasi"     -> com.alaa.R.raw.azan_mishary_alafasi
+        "mohamed_refat"       -> com.alaa.R.raw.azan_mohamed_refat
+        "mohammed_almenshawy" -> com.alaa.R.raw.azan_mohammed_almenshawy
+        "nasser_alqatami"     -> com.alaa.R.raw.azan_nasser_alqatami
+        "suhaib_khatba"       -> com.alaa.R.raw.azan_suhaib_khatba
+        else                  -> com.alaa.R.raw.azan_makkah
+    }
+}
 
     private fun playAzan() {
         val res = getSelectedAzanRes()
