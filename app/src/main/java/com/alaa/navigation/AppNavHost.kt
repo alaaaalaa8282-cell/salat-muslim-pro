@@ -42,7 +42,7 @@ private val navItems = listOf(
     BottomNavItem("المصحف",   Icons.Default.MenuBook, Screen.Mushaf),
     //BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
     BottomNavItem("راديو",      Icons.Default.Radio, Screen.Radio),
-    BottomNavItem("أذكار",      Icons.Default.Star, Screen.Adhkar),
+    
     //BottomNavItem("تحديات", Icons.Default.FitnessCenter, Screen.Challenges),
 )
 
