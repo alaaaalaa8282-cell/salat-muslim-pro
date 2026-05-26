@@ -30,6 +30,7 @@ import com.alaa.presentation.screen.radio.RadioScreen
 import com.alaa.presentation.screen.settings.SettingsScreen
 import com.alaa.ui.theme.DarkBg2
 import com.alaa.ui.theme.Gold
+import com.alaa.presentation.mushaf.MushafScreen
 
 data class BottomNavItem(val label: String, val icon: ImageVector, val screen: Screen)
 
