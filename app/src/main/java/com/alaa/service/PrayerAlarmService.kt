@@ -151,7 +151,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
         val prayerName = intent.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
 
         // ✅ فتح شاشة الأذان
-        val screenIntent = AzanFullScreenActivity.newIntent(context, prayerName)
+     val screenIntent = com.alaa.presentation.azan.AzanFullScreenActivity.newIntent(context, prayerName))
         context.startActivity(screenIntent)
     }
 }
