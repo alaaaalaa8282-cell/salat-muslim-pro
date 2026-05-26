@@ -42,6 +42,7 @@ private val navItems = listOf(
     BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
     BottomNavItem("راديو", Icons.Default.Radio, Screen.Radio),
     BottomNavItem("أذكار", Icons.Default.Star, Screen.Adhkar),
+    BottomNavItem("تحديات", Icons.Default.FitnessCenter, Screen.Challenges),
 )
 
 
@@ -105,6 +106,7 @@ LaunchedEffect(startScreen) {
             composable(Screen.Radio.route)       { RadioScreen() }   // ← جديد
            composable(Screen.Adhkar.route)       { AdhkarScreen() }
             composable(Screen.Settings.route)    { SettingsScreen() }
+           composable(Screen.Challenges.route) { ChallengesScreen() }
         }
     }
 }
