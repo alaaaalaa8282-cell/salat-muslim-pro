@@ -187,7 +187,7 @@ fun AzanFullScreenContent(prayerName: String, onStop: () -> Unit) {
 
     val animCrossfade by animateFloatAsState(
         targetValue = crossfadeAlpha,
-        animationSpec = tween(3000),
+        animationSpec = tween(10000),
         label = "crossfade"
     )
 
