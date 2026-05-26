@@ -116,6 +116,11 @@ class PrayerAlarmService : Service() {
             },
             PendingIntent.FLAG_IMMUTABLE
         )
+        val openIntent = PendingIntent.getActivity(
+    this, 1,
+    Intent(this, com.alaa.MainActivity::class.java),
+    PendingIntent.FLAG_IMMUTABLE
+)
         return NotificationCompat.Builder(this, Constants.AZAN_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .setContentTitle("وقت صلاة $prayerName")
@@ -123,7 +128,8 @@ class PrayerAlarmService : Service() {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
+            .setContentIntent(openIntent)
+.addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
             .build()
     }
 
