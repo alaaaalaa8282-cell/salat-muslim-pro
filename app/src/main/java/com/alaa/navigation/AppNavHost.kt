@@ -35,13 +35,14 @@ import com.alaa.presentation.mushaf.MushafScreen
 data class BottomNavItem(val label: String, val icon: ImageVector, val screen: Screen)
 
 private val navItems = listOf(
-    BottomNavItem("الرئيسية", Icons.Default.Home,         Screen.Home),
-    BottomNavItem("الأذكار",  Icons.Default.MusicNote,    Screen.Dhikr),
-    BottomNavItem("السبحة",   Icons.Default.Star,          Screen.Mesbaha),
-    BottomNavItem("المصحف", Icons.Default.MenuBook, Screen.Mushaf),
+    BottomNavItem("الرئيسية",    Icons.Default.Home,         Screen.Home),
+    BottomNavItem("الأذكار الصوتيه",     Icons.Default.MusicNote,    Screen.Dhikr),
+    BottomNavItem("السبحة",     Icons.Default.Star,          Screen.Mesbaha),
+   BottomNavItem("أذكار",       Icons.Default.Star, Screen.Adhkar),
+    BottomNavItem("المصحف",   Icons.Default.MenuBook, Screen.Mushaf),
     //BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
-    BottomNavItem("راديو", Icons.Default.Radio, Screen.Radio),
-    BottomNavItem("أذكار", Icons.Default.Star, Screen.Adhkar),
+    BottomNavItem("راديو",      Icons.Default.Radio, Screen.Radio),
+    BottomNavItem("أذكار",      Icons.Default.Star, Screen.Adhkar),
     //BottomNavItem("تحديات", Icons.Default.FitnessCenter, Screen.Challenges),
 )
 
