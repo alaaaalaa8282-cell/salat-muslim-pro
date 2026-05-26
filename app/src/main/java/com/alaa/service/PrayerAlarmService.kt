@@ -3,6 +3,7 @@ package com.alaa.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -19,6 +20,7 @@ class PrayerAlarmService : Service() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var prayerName = "الصلاة"
 
     override fun onBind(intent: Intent?) = null
 
@@ -27,7 +29,7 @@ class PrayerAlarmService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        val prayerName = intent?.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
+        prayerName = intent?.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
         isPlaying = true
         acquireWakeLock()
         createChannel()
@@ -38,7 +40,9 @@ class PrayerAlarmService : Service() {
 
     private fun getSelectedAzanRes(): Int {
         val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
-        return when (prefs.getString("azan_qari", "makkah")) {
+        val key = prefs.getString("prayerAdhan_$prayerName", "makkah")
+        if (key == "silent") return -1
+        return when (key) {
             "abed_albaset"        -> com.alaa.R.raw.azan_abed_albaset
             "al_hosary"           -> com.alaa.R.raw.azan_al_hosary
             "al_nakshabandy"      -> com.alaa.R.raw.azan_al_nakshabandy
@@ -53,6 +57,8 @@ class PrayerAlarmService : Service() {
     }
 
     private fun playAzan() {
+        val res = getSelectedAzanRes()
+        if (res == -1) { stopSelf(); return }
         try {
             val am = getSystemService(AUDIO_SERVICE) as AudioManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -66,7 +72,7 @@ class PrayerAlarmService : Service() {
                         ).build()
                 )
             }
-            mediaPlayer = MediaPlayer.create(this, getSelectedAzanRes())?.apply {
+            mediaPlayer = MediaPlayer.create(this, res)?.apply {
                 isLooping = false
                 setOnCompletionListener { stopSelf() }
                 start()
@@ -102,15 +108,24 @@ class PrayerAlarmService : Service() {
         }
     }
 
-    private fun buildNotification(prayerName: String): Notification =
-        NotificationCompat.Builder(this, Constants.AZAN_CHANNEL_ID)
+    private fun buildNotification(prayerName: String): Notification {
+        val stopIntent = PendingIntent.getService(
+            this, 0,
+            Intent(this, PrayerAlarmService::class.java).apply {
+                action = Constants.ACTION_STOP_AZAN
+            },
+            PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, Constants.AZAN_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .setContentTitle("وقت صلاة $prayerName")
             .setContentText("حي على الصلاة")
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
             .build()
+    }
 
     companion object {
         @Volatile var isPlaying: Boolean = false
