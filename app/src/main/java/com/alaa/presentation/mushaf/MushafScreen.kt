@@ -61,7 +61,11 @@ fun MushafScreen() {
     }
 
     DisposableEffect(Unit) { onDispose { renderer.close() } }
-
+DisposableEffect(pageIndex) {
+    onDispose {
+        prefs.edit().putInt("last_page", pageIndex).apply()
+    }
+}
     // حفظ الصفحة الحالية تلقائياً
     LaunchedEffect(pageIndex) {
         prefs.edit().putInt("last_page", pageIndex).apply()
