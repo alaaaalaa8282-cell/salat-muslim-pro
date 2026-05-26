@@ -37,7 +37,7 @@ private val navItems = listOf(
     BottomNavItem("الرئيسية", Icons.Default.Home,         Screen.Home),
     BottomNavItem("الأذكار",  Icons.Default.MusicNote,    Screen.Dhikr),
     BottomNavItem("السبحة",   Icons.Default.Star,          Screen.Mesbaha),
-    BottomNavItem("تحديات",   Icons.Default.FitnessCenter, Screen.Challenges),
+    BottomNavItem("المصحف", Icons.Default.MenuBook, Screen.Mushaf),
     BottomNavItem("القرآن",   Icons.Default.MenuBook,      Screen.Quran),
     BottomNavItem("راديو", Icons.Default.Radio, Screen.Radio),
     BottomNavItem("أذكار", Icons.Default.Star, Screen.Adhkar),
@@ -99,7 +99,7 @@ LaunchedEffect(startScreen) {
             composable(Screen.PrayerTimes.route) { PrayerTimesScreen() }
             composable(Screen.Dhikr.route)       { DhikrScreen() }
             composable(Screen.Mesbaha.route)     { MesbahaScreen() }
-            composable(Screen.Challenges.route)  { ChallengesScreen() }
+            composable(Screen.Mushaf.route)      { MushafScreen() }
             composable(Screen.Quran.route)       { QuranScreen() }
             composable(Screen.Radio.route)       { RadioScreen() }   // ← جديد
            composable(Screen.Adhkar.route)       { AdhkarScreen() }
