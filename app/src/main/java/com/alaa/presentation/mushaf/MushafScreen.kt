@@ -3,27 +3,32 @@ package com.alaa.presentation.mushaf
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alaa.ui.theme.DarkBg2
 import com.alaa.ui.theme.Gold
+import org.json.JSONArray
 import java.io.File
+
+data class SurahInfo(val name: String, val page: Int)
 
 @Composable
 fun MushafScreen() {
@@ -32,9 +37,7 @@ fun MushafScreen() {
         context.getSharedPreferences("mushaf_prefs", android.content.Context.MODE_PRIVATE)
     }
 
-    var pageIndex by remember {
-        mutableStateOf(prefs.getInt("last_page", 0)) // ✅ حفظ آخر صفحة
-    }
+    var pageIndex by remember { mutableStateOf(prefs.getInt("last_page", 0)) }
     var totalPages by remember { mutableStateOf(0) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var scale by remember { mutableStateOf(1f) }
@@ -44,6 +47,17 @@ fun MushafScreen() {
         )
     }
     var showBookmarks by remember { mutableStateOf(false) }
+    var showSurahs by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val surahs = remember {
+        val json = context.assets.open("surah_pages.json").bufferedReader().readText()
+        val arr = JSONArray(json)
+        (0 until arr.length()).map {
+            val obj = arr.getJSONObject(it)
+            SurahInfo(obj.getString("name"), obj.getInt("page"))
+        }
+    }
 
     val pdfFile = remember {
         val file = File(context.cacheDir, "quran.pdf")
@@ -61,12 +75,11 @@ fun MushafScreen() {
     }
 
     DisposableEffect(Unit) { onDispose { renderer.close() } }
-DisposableEffect(pageIndex) {
-    onDispose {
-        prefs.edit().putInt("last_page", pageIndex).apply()
+
+    DisposableEffect(pageIndex) {
+        onDispose { prefs.edit().putInt("last_page", pageIndex).apply() }
     }
-}
-    // حفظ الصفحة الحالية تلقائياً
+
     LaunchedEffect(pageIndex) {
         prefs.edit().putInt("last_page", pageIndex).apply()
         val page = renderer.openPage(pageIndex)
@@ -77,21 +90,19 @@ DisposableEffect(pageIndex) {
         scale = 1f
     }
 
+    // ديالوج المرجعيات
     if (showBookmarks) {
         AlertDialog(
             onDismissRequest = { showBookmarks = false },
-            title = { Text("المرجعيات", color = Gold) },
+            title = { Text("مرجعياتي", color = Gold) },
             containerColor = DarkBg2,
             text = {
                 if (bookmarks.isEmpty()) {
                     Text("لا توجد مرجعيات", color = androidx.compose.ui.graphics.Color.White)
                 } else {
-                    Column {
-                        bookmarks.sorted().forEach { page ->
-                            TextButton(onClick = {
-                                pageIndex = page
-                                showBookmarks = false
-                            }) {
+                    LazyColumn {
+                        items(bookmarks.sorted()) { page ->
+                            TextButton(onClick = { pageIndex = page; showBookmarks = false }) {
                                 Text("صفحة ${page + 1}", color = Gold)
                             }
                         }
@@ -99,7 +110,47 @@ DisposableEffect(pageIndex) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showBookmarks = false }) {
+                TextButton(onClick = { showBookmarks = false }) { Text("إغلاق", color = Gold) }
+            }
+        )
+    }
+
+    // ديالوج السور
+    if (showSurahs) {
+        AlertDialog(
+            onDismissRequest = { showSurahs = false; searchQuery = "" },
+            title = {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("ابحث عن سورة...", color = Gold.copy(0.5f)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Gold,
+                        unfocusedBorderColor = Gold.copy(0.5f),
+                        focusedTextColor = Gold,
+                        unfocusedTextColor = Gold
+                    ),
+                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Gold) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            containerColor = DarkBg2,
+            text = {
+                LazyColumn {
+                    items(surahs.filter { it.name.contains(searchQuery) }) { surah ->
+                        TextButton(onClick = {
+                            pageIndex = surah.page
+                            showSurahs = false
+                            searchQuery = ""
+                        }) {
+                            Text(surah.name, color = Gold, fontSize = 16.sp)
+                        }
+                        Divider(color = Gold.copy(0.2f))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSurahs = false; searchQuery = "" }) {
                     Text("إغلاق", color = Gold)
                 }
             }
@@ -118,35 +169,29 @@ DisposableEffect(pageIndex) {
             Text("صفحة ${pageIndex + 1} من $totalPages", color = Gold, fontSize = 16.sp)
 
             Row {
-                // زرار bookmark
                 IconButton(onClick = {
-                    val updated = if (bookmarks.contains(pageIndex))
-                        bookmarks - pageIndex
-                    else
-                        bookmarks + pageIndex
+                    val updated = if (bookmarks.contains(pageIndex)) bookmarks - pageIndex
+                    else bookmarks + pageIndex
                     bookmarks = updated
                     prefs.edit().putStringSet("bookmarks", updated.map { it.toString() }.toSet()).apply()
                 }) {
                     Icon(
-                        if (bookmarks.contains(pageIndex)) Icons.Filled.Bookmark
-                        else Icons.Filled.BookmarkBorder,
-                        contentDescription = null,
-                        tint = Gold
+                        if (bookmarks.contains(pageIndex)) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+                        contentDescription = null, tint = Gold
                     )
                 }
-
-                // زرار عرض المرجعيات
                 TextButton(onClick = { showBookmarks = true }) {
                     Text("مرجعياتي", color = Gold, fontSize = 12.sp)
+                }
+                TextButton(onClick = { showSurahs = true }) {
+                    Text("السور", color = Gold, fontSize = 12.sp)
                 }
             }
         }
 
         bitmap?.let {
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                modifier = Modifier.weight(1f).fillMaxWidth()
                     .pointerInput(Unit) {
                         detectTransformGestures { _, _, zoom, _ ->
                             scale = (scale * zoom).coerceIn(1f, 4f)
@@ -156,29 +201,22 @@ DisposableEffect(pageIndex) {
                 androidx.compose.foundation.Image(
                     bitmap = it.asImageBitmap(),
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer(scaleX = scale, scaleY = scale)
+                    modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = scale, scaleY = scale)
                 )
             }
         }
 
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
+        Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Button(
                 onClick = { if (pageIndex > 0) pageIndex-- },
                 colors = ButtonDefaults.buttonColors(containerColor = Gold),
-                shape = CircleShape,
-                enabled = pageIndex > 0
+                shape = CircleShape, enabled = pageIndex > 0
             ) { Text("السابقة", color = DarkBg2) }
 
             Button(
                 onClick = { if (pageIndex < totalPages - 1) pageIndex++ },
                 colors = ButtonDefaults.buttonColors(containerColor = Gold),
-                shape = CircleShape,
-                enabled = pageIndex < totalPages - 1
+                shape = CircleShape, enabled = pageIndex < totalPages - 1
             ) { Text("التالية", color = DarkBg2) }
         }
     }
