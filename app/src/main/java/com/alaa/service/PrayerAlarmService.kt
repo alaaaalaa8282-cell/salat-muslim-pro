@@ -137,14 +137,14 @@ class PrayerAlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(openIntent)
-.addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
+  .addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
             .build()
-    }
+      }
 
     companion object {
         @Volatile var isPlaying: Boolean = false
+     }
     }
-}
 
 class PrayerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
