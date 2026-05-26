@@ -141,12 +141,9 @@ class PrayerAlarmService : Service() {
 class PrayerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prayerName = intent.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
-        val i = Intent(context, PrayerAlarmService::class.java).apply {
-            putExtra(Constants.PRAYER_NAME_KEY, prayerName)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            context.startForegroundService(i)
-        else
-            context.startService(i)
+
+        // ✅ فتح شاشة الأذان
+        val screenIntent = AzanFullScreenActivity.newIntent(context, prayerName)
+        context.startActivity(screenIntent)
     }
 }
