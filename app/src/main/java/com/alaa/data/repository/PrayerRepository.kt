@@ -83,22 +83,15 @@ class PrayerRepository(private val prefs: PrefsManager) {
     // حفظ في الـ SharedPreferences
     // ─────────────────────────────────────────────────────────────────────
     private fun saveToCache(data: PrayerData, lat: Double, lon: Double) {
-        prefs.putString("cache_fajr",          data.fajr)
-        prefs.putString("cache_sunrise",       data.sunrise)
-        prefs.putString("cache_dhuhr",         data.dhuhr)
-        prefs.putString("cache_asr",           data.asr)
-        prefs.putString("cache_maghrib",       data.maghrib)
-        prefs.putString("cache_isha",          data.isha)
-        prefs.putString("cache_hijri",         data.hijriDate)
-        prefs.putString("cache_gregorian",     data.gregorianDate)
-        prefs.putString("cache_next_name",     data.nextPrayerName)
-        prefs.putString("cache_next_time",     data.nextPrayerTime)
-        prefs.putFloat("cache_lat",            lat.toFloat())
-        prefs.putFloat("cache_lon",            lon.toFloat())
-        // حفظ تاريخ اليوم عشان نعرف لو الـ cache قديم
-        val todayKey = getTodayKey()
-        prefs.putString("cache_date_key",      todayKey)
-    }
+    val todayKey = getTodayKey()
+    prefs.saveCache(
+        data.fajr, data.sunrise, data.dhuhr,
+        data.asr, data.maghrib, data.isha,
+        data.hijriDate, data.gregorianDate,
+        data.nextPrayerName, data.nextPrayerTime,
+        lat, lon, todayKey
+    )
+}
 
     // ─────────────────────────────────────────────────────────────────────
     // قراءة من الـ Cache
