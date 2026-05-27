@@ -87,4 +87,27 @@ class PrefsManager(context: Context) {
     var challengesPoints: Int
         get() = prefs.getInt("ch_points", 0)
         set(v) = prefs.edit().putInt("ch_points", v).apply()
+fun saveCache(
+    fajr: String, sunrise: String, dhuhr: String,
+    asr: String, maghrib: String, isha: String,
+    hijriDate: String, gregorianDate: String,
+    nextName: String, nextTime: String,
+    lat: Double, lon: Double, dateKey: String
+) {
+    prefs.edit()
+        .putString("cache_fajr",      fajr)
+        .putString("cache_sunrise",   sunrise)
+        .putString("cache_dhuhr",     dhuhr)
+        .putString("cache_asr",       asr)
+        .putString("cache_maghrib",   maghrib)
+        .putString("cache_isha",      isha)
+        .putString("cache_hijri",     hijriDate)
+        .putString("cache_gregorian", gregorianDate)
+        .putString("cache_next_name", nextName)
+        .putString("cache_next_time", nextTime)
+        .putFloat("cache_lat",        lat.toFloat())
+        .putFloat("cache_lon",        lon.toFloat())
+        .putString("cache_date_key",  dateKey)
+        .apply()
+}
 }
