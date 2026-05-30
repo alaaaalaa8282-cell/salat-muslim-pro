@@ -12,8 +12,6 @@ import com.alaa.data.prefs.PrefsManager
 import com.alaa.data.repository.PrayerRepository
 import com.alaa.data.repository.WeatherRepository
 import com.alaa.utils.PrayerScheduler
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,7 +97,7 @@ class HomeViewModel(
             try {
                 val fusedClient = LocationServices.getFusedLocationProviderClient(context)
                 fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                    .addOnSuccessListener { location ->
+                    .addOnSuccessListener { location: android.location.Location? ->
                         if (location != null) {
                             val lat = location.latitude
                             val lon = location.longitude
