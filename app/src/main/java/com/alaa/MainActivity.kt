@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import com.alaa.navigation.AppNavHost
 import com.alaa.ui.theme.AlaAppTheme
 import com.alaa.service.CountdownNotificationService
-import android.content.Intent
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,8 +25,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-override fun onNewIntent(intent: Intent) {
-    super.onNewIntent(intent)
-    setIntent(intent)
-}
 }

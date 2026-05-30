@@ -9,11 +9,11 @@ class PrefsManager(context: Context) {
 
     // Location — مخزّنة كـ String عشان نتجنب مشاكل Kotlin/Java مع Double
     var latitude:  Double
-        get() = prefs.getString("lat", "0.0")?.toDoubleOrNull() ?: 0.0
+        get() = prefs.getString("lat", "30.0571")?.toDoubleOrNull() ?: 30.0571
         set(v) = prefs.edit().putString("lat", v.toString()).apply()
 
     var longitude: Double
-        get() = prefs.getString("lon", "0.0")?.toDoubleOrNull() ?: 0.0
+        get() = prefs.getString("lon", "31.2272")?.toDoubleOrNull() ?: 31.2272
         set(v) = prefs.edit().putString("lon", v.toString()).apply()
 
     var cityName: String
@@ -109,7 +109,7 @@ fun saveCache(
         .putFloat("cache_lon",        lon.toFloat())
         .putString("cache_date_key",  dateKey)
         .apply()
-    }
+}
 fun getString(key: String, default: String? = null): String? =
     prefs.getString(key, default)
 
