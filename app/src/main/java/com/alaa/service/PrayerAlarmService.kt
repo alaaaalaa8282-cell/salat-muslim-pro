@@ -15,6 +15,8 @@ import android.os.Build
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.alaa.utils.Constants
+import com.alaa.utils.PrayerScheduler
+import java.util.Calendar
 
 class PrayerAlarmService : Service() {
 
@@ -39,30 +41,30 @@ class PrayerAlarmService : Service() {
     }
 
     private fun getSelectedAzanRes(): Int {
-    val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
-    val enKey = when (prayerName) {
-        "الفجر"  -> "Fajr"
-        "الظهر"  -> "Dhuhr"
-        "العصر"  -> "Asr"
-        "المغرب" -> "Maghrib"
-        "العشاء" -> "Isha"
-        else     -> prayerName
+        val prefs = getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
+        val enKey = when (prayerName) {
+            "الفجر"  -> "Fajr"
+            "الظهر"  -> "Dhuhr"
+            "العصر"  -> "Asr"
+            "المغرب" -> "Maghrib"
+            "العشاء" -> "Isha"
+            else     -> prayerName
+        }
+        val key = prefs.getString("prayerAdhan_$enKey", "makkah")
+        if (key == "silent") return -1
+        return when (key) {
+            "abed_albaset"        -> com.alaa.R.raw.azan_abed_albaset
+            "al_hosary"           -> com.alaa.R.raw.azan_al_hosary
+            "al_nakshabandy"      -> com.alaa.R.raw.azan_al_nakshabandy
+            "mansoor_al_zahrani"  -> com.alaa.R.raw.azan_mansoor_al_zahrani
+            "mishary_alafasi"     -> com.alaa.R.raw.azan_mishary_alafasi
+            "mohamed_refat"       -> com.alaa.R.raw.azan_mohamed_refat
+            "mohammed_almenshawy" -> com.alaa.R.raw.azan_mohammed_almenshawy
+            "nasser_alqatami"     -> com.alaa.R.raw.azan_nasser_alqatami
+            "suhaib_khatba"       -> com.alaa.R.raw.azan_suhaib_khatba
+            else                  -> com.alaa.R.raw.azan_makkah
+        }
     }
-    val key = prefs.getString("prayerAdhan_$enKey", "makkah")
-    if (key == "silent") return -1
-    return when (key) {
-        "abed_albaset"        -> com.alaa.R.raw.azan_abed_albaset
-        "al_hosary"           -> com.alaa.R.raw.azan_al_hosary
-        "al_nakshabandy"      -> com.alaa.R.raw.azan_al_nakshabandy
-        "mansoor_al_zahrani"  -> com.alaa.R.raw.azan_mansoor_al_zahrani
-        "mishary_alafasi"     -> com.alaa.R.raw.azan_mishary_alafasi
-        "mohamed_refat"       -> com.alaa.R.raw.azan_mohamed_refat
-        "mohammed_almenshawy" -> com.alaa.R.raw.azan_mohammed_almenshawy
-        "nasser_alqatami"     -> com.alaa.R.raw.azan_nasser_alqatami
-        "suhaib_khatba"       -> com.alaa.R.raw.azan_suhaib_khatba
-        else                  -> com.alaa.R.raw.azan_makkah
-    }
-}
 
     private fun playAzan() {
         val res = getSelectedAzanRes()
@@ -125,10 +127,10 @@ class PrayerAlarmService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         val openIntent = PendingIntent.getActivity(
-    this, 1,
-    Intent(this, com.alaa.MainActivity::class.java),
-    PendingIntent.FLAG_IMMUTABLE
-)
+            this, 1,
+            Intent(this, com.alaa.MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
         return NotificationCompat.Builder(this, Constants.AZAN_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
             .setContentTitle("وقت صلاة $prayerName")
@@ -137,21 +139,55 @@ class PrayerAlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(openIntent)
-  .addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
+            .addAction(android.R.drawable.ic_media_pause, "إيقاف الأذان", stopIntent)
             .build()
-      }
+    }
 
     companion object {
         @Volatile var isPlaying: Boolean = false
-     }
     }
+}
 
 class PrayerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val prayerName = intent.getStringExtra(Constants.PRAYER_NAME_KEY) ?: "الصلاة"
 
-        // ✅ فتح شاشة الأذان
-    val screenIntent = com.alaa.presentation.azan.AzanFullScreenActivity.newIntent(context, prayerName)
+        // ── 1. إعادة جدولة نفس الصلاة لنفس الوقت غداً (+24 ساعة) ──────
+        val prayerToIndex = mapOf(
+            "الفجر" to 0, "الظهر" to 1, "العصر" to 2, "المغرب" to 3, "العشاء" to 4
+        )
+        val idx = prayerToIndex[prayerName]
+        if (idx != null) {
+            val tomorrow = Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            PrayerScheduler.schedulePrayer(
+                context,
+                prayerName,
+                tomorrow.time,
+                Constants.PRAYER_REQUEST_CODE + idx
+            )
+        }
+
+        // ── 2. فحص هل الأذان صامت ──────────────────────────────────────
+        val enKey = when (prayerName) {
+            "الفجر"  -> "Fajr"
+            "الظهر"  -> "Dhuhr"
+            "العصر"  -> "Asr"
+            "المغرب" -> "Maghrib"
+            "العشاء" -> "Isha"
+            else     -> prayerName
+        }
+        val prefs = context.getSharedPreferences("prayer_prefs", Context.MODE_PRIVATE)
+        val adhanKey = prefs.getString("prayerAdhan_$enKey", "makkah")
+
+        // ── 3. لو صامت → وقف هنا، لا شاشة ولا صوت ────────────────────
+        if (adhanKey == "silent") return
+
+        // ── 4. فتح شاشة الأذان (اللي هي بتشغّل PrayerAlarmService) ─────
+        val screenIntent = com.alaa.presentation.azan.AzanFullScreenActivity.newIntent(context, prayerName)
         context.startActivity(screenIntent)
     }
 }
