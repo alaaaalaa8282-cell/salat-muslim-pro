@@ -93,7 +93,6 @@ class HomeViewModel(
     }
 
     @Suppress("MissingPermission")
-    @Suppress("MissingPermission")
 fun fetchLocation(context: Context) {
     try {
         val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
