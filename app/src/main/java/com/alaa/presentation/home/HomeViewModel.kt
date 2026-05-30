@@ -47,7 +47,24 @@ class HomeViewModel(
             loadData(context, savedLat, savedLon)
         }
         fetchLocation(context)
-        startCountdownTick()
+        private fun startCountdownTick() {
+    viewModelScope.launch {
+        while (isActive) {
+            val current = _state.value.prayerData
+            // لو البيانات فاضية — اجلب من الـ cache
+            if (current.nextPrayerTime.isEmpty()) {
+                val lat = prefs.latitude
+                val lon = prefs.longitude
+                if (lat != 0.0 && lon != 0.0) {
+                    try {
+                        val prayer = prayerRepo.getPrayerTimes(lat, lon)
+                        _state.update { it.copy(prayerData = prayer) }
+                    } catch (_: Exception) {}
+                }
+                delay(1_000)
+                continue
+            }
+            // باقي الكود زي ما هو
     }
 
     @Suppress("MissingPermission")
