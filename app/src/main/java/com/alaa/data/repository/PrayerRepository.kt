@@ -17,40 +17,51 @@ class PrayerRepository(private val prefs: PrefsManager) {
         "رمضان","شوال","ذو القعدة","ذو الحجة"
     )
 
-    // ─────────────────────────────────────────────────────────────────────
-    // الدالة الرئيسية — تُرجع البيانات من الـ Cache فوراً إن وُجدت
-    // ─────────────────────────────────────────────────────────────────────
+    // ─── الـ timings الخام محفوظة في الميموري لحساب العد التنازلي ───
+    @Volatile private var cachedTimings: JSONObject? = null
+
+    // ─────────────────────────────────────────────────────────────────
+    // الدالة الرئيسية
+    // ─────────────────────────────────────────────────────────────────
     suspend fun getPrayerTimes(lat: Double, lon: Double): PrayerData {
         return withContext(Dispatchers.IO) {
-
-            // ── 1. جرّب الـ Cache الأول ──────────────────────────────────
             val cached = loadFromCache()
             if (cached != null && isCacheValidToday()) {
-                // Cache صالح لنفس اليوم → أرجعه فوراً بدون أي loading
                 return@withContext cached
             }
-
-            // ── 2. Cache قديم أو مفيش → اجلب من النت ───────────────────
             try {
                 val fresh = fetchFromNetwork(lat, lon)
                 saveToCache(fresh, lat, lon)
                 fresh
             } catch (e: Exception) {
-                // ── 3. فشل النت → أرجع الـ Cache القديم لو موجود ────────
                 cached ?: PrayerData()
             }
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // العد التنازلي الحي — يُستدعى كل ثانية من الـ ViewModel
+    // ─────────────────────────────────────────────────────────────────
+    fun computeLiveCountdown(): Pair<String, String> {
+        val timings = cachedTimings ?: return Pair("", "--:--:--")
+        return try {
+            val (name, _, countdown) = getNext("", "", "", "", "", timings)
+            Pair(name, countdown)
+        } catch (_: Exception) { Pair("", "--:--:--") }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
     // جلب الأوقات من الـ API
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     private fun fetchFromNetwork(lat: Double, lon: Double): PrayerData {
         val ts   = System.currentTimeMillis() / 1000
         val url  = "https://api.aladhan.com/v1/timings/$ts?latitude=$lat&longitude=$lon&method=5"
         val json = JSONObject(URL(url).readText())
         val data = json.getJSONObject("data")
         val timings = data.getJSONObject("timings")
+
+        // ← حفظ الـ timings الخام للعد التنازلي
+        cachedTimings = timings
 
         val fajr    = convert(timings.getString("Fajr"))
         val sunrise = convert(timings.getString("Sunrise"))
@@ -79,23 +90,23 @@ class PrayerRepository(private val prefs: PrefsManager) {
         )
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // حفظ في الـ SharedPreferences
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     private fun saveToCache(data: PrayerData, lat: Double, lon: Double) {
-    val todayKey = getTodayKey()
-    prefs.saveCache(
-        data.fajr, data.sunrise, data.dhuhr,
-        data.asr, data.maghrib, data.isha,
-        data.hijriDate, data.gregorianDate,
-        data.nextPrayerName, data.nextPrayerTime,
-        lat, lon, todayKey
-    )
-}
+        val todayKey = getTodayKey()
+        prefs.saveCache(
+            data.fajr, data.sunrise, data.dhuhr,
+            data.asr, data.maghrib, data.isha,
+            data.hijriDate, data.gregorianDate,
+            data.nextPrayerName, data.nextPrayerTime,
+            lat, lon, todayKey
+        )
+    }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // قراءة من الـ Cache
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     private fun loadFromCache(): PrayerData? {
         val fajr = prefs.getString("cache_fajr", null) ?: return null
         return PrayerData(
@@ -109,15 +120,15 @@ class PrayerRepository(private val prefs: PrefsManager) {
             gregorianDate = prefs.getString("cache_gregorian", getGregorianDate()) ?: getGregorianDate(),
             nextPrayerName = prefs.getString("cache_next_name", "الفجر") ?: "الفجر",
             nextPrayerTime = prefs.getString("cache_next_time", "--:--") ?: "--:--",
-            countdown      = "--:--:--"   // الـ countdown يُحسب دايماً live
+            countdown      = "--:--:--" // يُحسب live في الـ ViewModel
         )
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // هل الـ Cache لنفس اليوم؟
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     private fun isCacheValidToday(): Boolean {
-        val cached  = prefs.getString("cache_date_key", null) ?: return false
+        val cached = prefs.getString("cache_date_key", null) ?: return false
         return cached == getTodayKey()
     }
 
@@ -126,18 +137,18 @@ class PrayerRepository(private val prefs: PrefsManager) {
         return "${cal.get(Calendar.YEAR)}-${cal.get(Calendar.MONTH)}-${cal.get(Calendar.DAY_OF_MONTH)}"
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // آخر موقع محفوظ (لو مفيش GPS)
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // آخر موقع محفوظ
+    // ─────────────────────────────────────────────────────────────────
     fun getLastLocation(): Pair<Double, Double>? {
         val lat = prefs.getFloat("cache_lat", 0f)
         val lon = prefs.getFloat("cache_lon", 0f)
         return if (lat != 0f && lon != 0f) Pair(lat.toDouble(), lon.toDouble()) else null
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // باقي الدوال (بدون تغيير)
-    // ─────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // دوال مساعدة
+    // ─────────────────────────────────────────────────────────────────
     private fun convert(time24: String): String {
         return try {
             val sdf24 = SimpleDateFormat("HH:mm", Locale.US)
@@ -215,6 +226,10 @@ class PrayerRepository(private val prefs: PrefsManager) {
                 val url = "https://api.aladhan.com/v1/timings/$ts?latitude=$lat&longitude=$lon&method=5"
                 val json = JSONObject(URL(url).readText())
                 val timings = json.getJSONObject("data").getJSONObject("timings")
+
+                // ← حفظ الـ timings الخام (يحل مشكلة التايمر عند بدء التطبيق)
+                cachedTimings = timings
+
                 val sdf = SimpleDateFormat("HH:mm", Locale.US)
                 val names = mapOf(
                     "الفجر"  to "Fajr",
