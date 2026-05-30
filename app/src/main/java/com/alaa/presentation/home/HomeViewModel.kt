@@ -64,8 +64,8 @@ class HomeViewModel(
                 delay(1_000)
                 continue
             }
-            // باقي الكود زي ما هو
-    }
+        } 
+            // باقي الكود زي ما 
 
     @Suppress("MissingPermission")
     fun fetchLocation(context: Context) {
