@@ -109,7 +109,6 @@ fun saveCache(
         .putFloat("cache_lon",        lon.toFloat())
         .putString("cache_date_key",  dateKey)
         .apply()
-.apply()
     }
 fun getString(key: String, default: String? = null): String? =
     prefs.getString(key, default)
