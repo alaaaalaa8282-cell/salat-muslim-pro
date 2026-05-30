@@ -1,8 +1,9 @@
 package com.alaa.presentation.home
 
-import android.content.Context
-import android.location.Geocoder
-import android.location.LocationManager
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alaa.data.model.PrayerData
@@ -19,6 +20,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Locale
+import android.content.Context
+import android.location.Geocoder
+import android.location.LocationManager
 
 data class HomeState(
     val prayerData:  PrayerData  = PrayerData(),
@@ -101,6 +105,7 @@ class HomeViewModel(
                 it.copy(prayerData = prayer, weatherData = weather, isLoading = false, lat = lat, lon = lon)
             }
             try {
+                // getScheduledPrayerTimes بيعمل network call وبيحفظ cachedTimings تلقائياً
                 val times = prayerRepo.getScheduledPrayerTimes(lat, lon)
                 PrayerScheduler.scheduleAllPrayers(context, times)
             } catch (_: Exception) {}
@@ -109,14 +114,40 @@ class HomeViewModel(
 
     private fun startCountdownTick() {
         viewModelScope.launch {
+            var tick = 0
             while (isActive) {
                 delay(1_000)
+                tick++
                 val lat = prefs.latitude
                 val lon = prefs.longitude
                 if (lat == 0.0 && lon == 0.0) continue
+
                 try {
-                    val prayer = prayerRepo.getPrayerTimes(lat, lon)
-                    _state.update { it.copy(prayerData = prayer) }
+                    // كل 60 ثانية: تحديث بيانات الصلاة (التاريخ الهجري، الأوقات، خصوصاً عند منتصف الليل)
+                    if (tick % 60 == 0) {
+                        val fresh = prayerRepo.getPrayerTimes(lat, lon)
+                        _state.update { current ->
+                            current.copy(
+                                prayerData = fresh.copy(
+                                    // احتفظ بالـ countdown الحي وما تكتبش "--:--:--" فوقيه
+                                    countdown = current.prayerData.countdown
+                                )
+                            )
+                        }
+                    }
+
+                    // كل ثانية: العد التنازلي الحي من الـ cachedTimings (بدون أي IO أو network)
+                    val (nextName, countdown) = prayerRepo.computeLiveCountdown()
+                    if (countdown != "--:--:--") {
+                        _state.update { current ->
+                            current.copy(
+                                prayerData = current.prayerData.copy(
+                                    nextPrayerName = nextName,
+                                    countdown      = countdown
+                                )
+                            )
+                        }
+                    }
                 } catch (_: Exception) {}
             }
         }
