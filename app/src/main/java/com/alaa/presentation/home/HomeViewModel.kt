@@ -93,54 +93,50 @@ class HomeViewModel(
     }
 
     @Suppress("MissingPermission")
-    fun fetchLocation(context: Context) {
-        viewModelScope.launch(Dispatchers.IO) {
+    @Suppress("MissingPermission")
+fun fetchLocation(context: Context) {
+    try {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        var found = false
+        for (provider in listOf(
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+            LocationManager.PASSIVE_PROVIDER
+        )) {
             try {
-                val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                var found = false
-
-                // جرب getLastKnownLocation أولاً
-                for (provider in listOf(
-                    LocationManager.GPS_PROVIDER,
-                    LocationManager.NETWORK_PROVIDER,
-                    LocationManager.PASSIVE_PROVIDER
-                )) {
-                    try {
-                        val loc = lm.getLastKnownLocation(provider)
-                        if (loc != null) {
-                            found = true
-                            onLocationFound(context, loc.latitude, loc.longitude)
-                            break
-                        }
-                    } catch (_: Exception) {}
+                val loc = lm.getLastKnownLocation(provider)
+                if (loc != null) {
+                    found = true
+                    onLocationFound(context, loc.latitude, loc.longitude)
+                    break
                 }
-
-                // لو مش لاقي — اطلب تحديث فوري
-                if (!found) {
-                    val listener = object : LocationListener {
-                        override fun onLocationChanged(loc: Location) {
-                            onLocationFound(context, loc.latitude, loc.longitude)
-                            try { lm.removeUpdates(this) } catch (_: Exception) {}
-                        }
-                    }
-                    try {
-                        lm.requestLocationUpdates(
-                            LocationManager.NETWORK_PROVIDER, 0L, 0f, listener
-                        )
-                    } catch (_: Exception) {}
-                    try {
-                        lm.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER, 0L, 0f, listener
-                        )
-                    } catch (_: Exception) {}
-
-                    _state.update { it.copy(cityName = "جارٍ تحديد الموقع...", isLoading = true) }
-                }
-            } catch (_: Exception) {
-                _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
-            }
+            } catch (_: Exception) {}
         }
+        if (!found) {
+            val listener = object : LocationListener {
+                override fun onLocationChanged(loc: Location) {
+                    onLocationFound(context, loc.latitude, loc.longitude)
+                    try { lm.removeUpdates(this) } catch (_: Exception) {}
+                }
+            }
+            try {
+                lm.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, 0L, 0f, listener,
+                    android.os.Looper.getMainLooper()
+                )
+            } catch (_: Exception) {}
+            try {
+                lm.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, 0L, 0f, listener,
+                    android.os.Looper.getMainLooper()
+                )
+            } catch (_: Exception) {}
+            _state.update { it.copy(cityName = "جارٍ تحديد الموقع...", isLoading = true) }
+        }
+    } catch (_: Exception) {
+        _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
     }
+}
 
     private fun onLocationFound(context: Context, lat: Double, lon: Double) {
         prefs.latitude  = lat
