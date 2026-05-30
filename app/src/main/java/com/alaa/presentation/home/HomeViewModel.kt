@@ -1,9 +1,10 @@
 package com.alaa.presentation.home
 
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import android.content.Context
 import android.location.Geocoder
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.alaa.data.model.PrayerData
@@ -95,37 +96,67 @@ class HomeViewModel(
     fun fetchLocation(context: Context) {
         viewModelScope.launch(Dispatchers.Main) {
             try {
-                val fusedClient = LocationServices.getFusedLocationProviderClient(context)
-                fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                    .addOnSuccessListener { location: android.location.Location? ->
-                        if (location != null) {
-                            val lat = location.latitude
-                            val lon = location.longitude
-                            prefs.latitude  = lat
-                            prefs.longitude = lon
-                            viewModelScope.launch(Dispatchers.IO) {
-                                try {
-                                    @Suppress("DEPRECATION")
-                                    val addr = Geocoder(context, Locale("ar")).getFromLocation(lat, lon, 1)
-                                    val city = addr?.firstOrNull()?.locality
-                                        ?: addr?.firstOrNull()?.subAdminArea
-                                        ?: addr?.firstOrNull()?.adminArea
-                                        ?: "موقعك"
-                                    prefs.cityName = city
-                                    _state.update { it.copy(cityName = city) }
-                                } catch (_: Exception) {}
-                                loadData(context, lat, lon)
-                            }
-                        } else {
-                            _state.update { it.copy(cityName = "فعّل الـ GPS", isLoading = false) }
+                val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+                var found = false
+
+                // جرب getLastKnownLocation أولاً
+                for (provider in listOf(
+                    LocationManager.GPS_PROVIDER,
+                    LocationManager.NETWORK_PROVIDER,
+                    LocationManager.PASSIVE_PROVIDER
+                )) {
+                    try {
+                        val loc = lm.getLastKnownLocation(provider)
+                        if (loc != null) {
+                            found = true
+                            onLocationFound(context, loc.latitude, loc.longitude)
+                            break
+                        }
+                    } catch (_: Exception) {}
+                }
+
+                // لو مش لاقي — اطلب تحديث فوري
+                if (!found) {
+                    val listener = object : LocationListener {
+                        override fun onLocationChanged(loc: Location) {
+                            onLocationFound(context, loc.latitude, loc.longitude)
+                            try { lm.removeUpdates(this) } catch (_: Exception) {}
                         }
                     }
-                    .addOnFailureListener {
-                        _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
-                    }
+                    try {
+                        lm.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER, 0L, 0f, listener
+                        )
+                    } catch (_: Exception) {}
+                    try {
+                        lm.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER, 0L, 0f, listener
+                        )
+                    } catch (_: Exception) {}
+
+                    _state.update { it.copy(cityName = "جارٍ تحديد الموقع...", isLoading = true) }
+                }
             } catch (_: Exception) {
                 _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
             }
+        }
+    }
+
+    private fun onLocationFound(context: Context, lat: Double, lon: Double) {
+        prefs.latitude  = lat
+        prefs.longitude = lon
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                @Suppress("DEPRECATION")
+                val addr = Geocoder(context, Locale("ar")).getFromLocation(lat, lon, 1)
+                val city = addr?.firstOrNull()?.locality
+                    ?: addr?.firstOrNull()?.subAdminArea
+                    ?: addr?.firstOrNull()?.adminArea
+                    ?: "موقعك"
+                prefs.cityName = city
+                _state.update { it.copy(cityName = city) }
+            } catch (_: Exception) {}
+            loadData(context, lat, lon)
         }
     }
 
