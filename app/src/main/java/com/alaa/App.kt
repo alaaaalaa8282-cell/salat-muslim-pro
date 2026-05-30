@@ -23,7 +23,8 @@ class App : Application() {
                 module {
                     single { PrefsManager(androidContext()) }
                     single { PrayerRepository(get()) }
-                    single { WeatherRepository() }
+                    single { PrayerRepository(get()) }
+                    single { WeatherRepository(androidContext()) }
                     viewModel { HomeViewModel(get(), get(), get()) }
                     viewModel { DhikrViewModel(get()) }
                 }
