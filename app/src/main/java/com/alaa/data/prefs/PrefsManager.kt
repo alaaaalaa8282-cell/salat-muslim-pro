@@ -111,11 +111,10 @@ fun saveCache(
         .apply()
 .apply()
     }
+fun getString(key: String, default: String? = null): String? =
+    prefs.getString(key, default)
 
-    fun getString(key: String, default: String? = null): String? =
-        prefs.getString(key, default)
-
-    fun getFloat(key: String, default: Float = 0f): Float =
-        prefs.getFloat(key, default)
+fun getFloat(key: String, default: Float = 0f): Float =
+    prefs.getFloat(key, default)
 }
 
