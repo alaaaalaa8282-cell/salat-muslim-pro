@@ -47,25 +47,8 @@ class HomeViewModel(
             loadData(context, savedLat, savedLon)
         }
         fetchLocation(context)
-        private fun startCountdownTick() {
-    viewModelScope.launch {
-        while (isActive) {
-            val current = _state.value.prayerData
-            // لو البيانات فاضية — اجلب من الـ cache
-            if (current.nextPrayerTime.isEmpty()) {
-                val lat = prefs.latitude
-                val lon = prefs.longitude
-                if (lat != 0.0 && lon != 0.0) {
-                    try {
-                        val prayer = prayerRepo.getPrayerTimes(lat, lon)
-                        _state.update { it.copy(prayerData = prayer) }
-                    } catch (_: Exception) {}
-                }
-                delay(1_000)
-                continue
-            }
-        } 
-            // باقي الكود زي ما 
+        startCountdownTick()
+    }
 
     @Suppress("MissingPermission")
     fun fetchLocation(context: Context) {
@@ -126,31 +109,31 @@ class HomeViewModel(
     }
 
     private fun startCountdownTick() {
-    viewModelScope.launch {
-        while (isActive) {
-            val current = _state.value.prayerData
-            if (current.nextPrayerTime.isNotEmpty()) {
-                try {
-                    val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale("ar"))
-                    val nextTime = sdf.parse(current.nextPrayerTime)
-                    val cal = java.util.Calendar.getInstance()
-                    val p = java.util.Calendar.getInstance().apply { time = nextTime!! }
-                    cal.set(java.util.Calendar.HOUR_OF_DAY, p.get(java.util.Calendar.HOUR_OF_DAY))
-                    cal.set(java.util.Calendar.MINUTE, p.get(java.util.Calendar.MINUTE))
-                    cal.set(java.util.Calendar.SECOND, 0)
-                    val diff = cal.timeInMillis - System.currentTimeMillis()
-                    if (diff > 0) {
-                        val h = diff / 3_600_000
-                        val m = (diff % 3_600_000) / 60_000
-                        val s = (diff % 60_000) / 1_000
-                        _state.update { it.copy(prayerData = current.copy(
-                            countdown = "%02d:%02d:%02d".format(h, m, s)
-                        ))}
-                    }
-                } catch (_: Exception) {}
+        viewModelScope.launch {
+            while (isActive) {
+                val current = _state.value.prayerData
+                if (current.nextPrayerTime.isNotEmpty()) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("hh:mm a", java.util.Locale("ar"))
+                        val nextTime = sdf.parse(current.nextPrayerTime)
+                        val cal = java.util.Calendar.getInstance()
+                        val p = java.util.Calendar.getInstance().apply { time = nextTime!! }
+                        cal.set(java.util.Calendar.HOUR_OF_DAY, p.get(java.util.Calendar.HOUR_OF_DAY))
+                        cal.set(java.util.Calendar.MINUTE, p.get(java.util.Calendar.MINUTE))
+                        cal.set(java.util.Calendar.SECOND, 0)
+                        val diff = cal.timeInMillis - System.currentTimeMillis()
+                        if (diff > 0) {
+                            val h = diff / 3_600_000
+                            val m = (diff % 3_600_000) / 60_000
+                            val s = (diff % 60_000) / 1_000
+                            _state.update { it.copy(prayerData = current.copy(
+                                countdown = "%02d:%02d:%02d".format(h, m, s)
+                            ))}
+                        }
+                    } catch (_: Exception) {}
+                }
+                delay(1_000)
             }
-            delay(1_000)
         }
     }
 }
-    }
