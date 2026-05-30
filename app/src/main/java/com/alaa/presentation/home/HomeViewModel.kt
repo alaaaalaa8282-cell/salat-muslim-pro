@@ -75,6 +75,7 @@ class HomeViewModel(
 
     @Suppress("MissingPermission")
     fun fetchLocation(context: Context) {
+        viewModelScope.launch(Dispatchers.IO) {
         try {
             val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
             val providers = listOf(
@@ -114,6 +115,7 @@ class HomeViewModel(
         } catch (_: Exception) {
             _state.update { it.copy(cityName = "تعذّر تحديد الموقع", isLoading = false) }
         }
+        } // end launch
     }
 
     fun loadData(context: Context, lat: Double, lon: Double) {
@@ -132,3 +134,4 @@ class HomeViewModel(
     }
 
 }
+
