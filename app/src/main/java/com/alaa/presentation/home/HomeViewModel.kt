@@ -94,7 +94,7 @@ class HomeViewModel(
 
     @Suppress("MissingPermission")
     fun fetchLocation(context: Context) {
-        viewModelScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
                 var found = false
