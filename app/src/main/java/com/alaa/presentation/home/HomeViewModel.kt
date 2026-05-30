@@ -43,10 +43,11 @@ class HomeViewModel(
         val savedLat = prefs.latitude
         val savedLon = prefs.longitude
         if (savedLat != 0.0 && savedLon != 0.0) {
-            _state.update { it.copy(cityName = prefs.cityName, lat = savedLat, lon = savedLon) }
+            _state.update { it.copy(cityName = prefs.cityName, lat = savedLat, lon = savedLon, isLoading = false) }
             loadData(context, savedLat, savedLon)
+        } else {
+            fetchLocation(context)
         }
-        fetchLocation(context)
         startCountdownTick()
     }
 
