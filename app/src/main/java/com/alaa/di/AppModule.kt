@@ -12,7 +12,7 @@ import org.koin.dsl.module
 val appModule = module {
     single { PrefsManager(androidContext()) }
     single { PrayerRepository(get()) }
-    single { WeatherRepository() }
+    single { WeatherRepository(androidContext()) }
     viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { DhikrViewModel(get()) }
 }
