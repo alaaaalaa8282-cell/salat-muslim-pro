@@ -36,15 +36,16 @@
 
         <!-- ─── Main Activity ─────────────────────────────── -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize"
-            android:configChanges="orientation|screenSize|keyboardHidden">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+    android:name=".MainActivity"
+    android:exported="true"
+    android:windowSoftInputMode="adjustResize"
+    android:configChanges="orientation|screenSize|keyboardHidden"
+    android:launchMode="singleTop">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent-filter>
+</activity>
 
         <!-- ─── Azan Full Screen Activity ────────────────── -->
         <activity
