@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import java.util.Locale
 
 data class HomeState(
@@ -108,7 +109,7 @@ class HomeViewModel(
     }
 
     private fun startCountdownTick() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             while (isActive) {
                 delay(1_000)
                 val lat = prefs.latitude
